@@ -46,6 +46,7 @@ typedef struct {
     NoBloco* listaDeBlocos;
 
 int pontuacao;
+int recordeTotal;
 int vidas;
 int nivel;
 int timerSpeed;

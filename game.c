@@ -13,6 +13,7 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     e->telaLargura = largura;
     e->telaAltura = altura;
     e->pontuacao = 0;
+    e->recordeTotal = 0;
     e->vidas = 3;
     e->nivel = 1;
     e->timerSpeed = 50;
@@ -69,6 +70,14 @@ void desenharTudo(EstadoJogo* estado){
 
     screenGotoxy(x_meio - 12, y_meio + 5);
     printf("Pressione 'q' para sair");
+
+    screenSetColor(WHITE, BLACK);
+    screenGotoxy(2, estado->telaAltura - 1);
+
+    printf("RECORDE: %d    PONTOS: %d", estado->recordeTotal, estado->pontuacao);
+
+    screenGotoxy(estado->telaLargura - 10, estado->telaAltura - 1);
+    printf("VIDAS: %d", estado->vidas);
 }
 
 void carregarNivel(EstadoJogo* e, int nivel){
