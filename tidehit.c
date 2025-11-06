@@ -39,6 +39,9 @@ int main() {
 
         if(keyhit()) {
             ch= readch();
+            
+        
+        atualizarJogador(estado, ch);
    }
         if(timerTimeOver() ==1){
         }

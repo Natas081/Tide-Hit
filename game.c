@@ -40,6 +40,20 @@ void liberarEstado(EstadoJogo* estado){
 
 void atualizarJogador(EstadoJogo* e, int tecla){
 
+
+    if(tecla == 'a'){
+
+    if(e->jogador.pos.x > 2){
+            e->jogador.pos.x--;
+        }
+    } 
+    else if (tecla == 'd') {
+
+    int x_maximo = e->telaLargura - e->jogador.largura - 1;
+    if(e->jogador.pos.x < x_maximo) {
+        e->jogador.pos.x++;
+    }
+    }
 }
 
 void atualizarBola(EstadoJogo* e){
@@ -50,34 +64,24 @@ void verificarColisoes(EstadoJogo* e){
 
 }
 
-void desenharTudo(EstadoJogo* estado){
+void desenharTudo(EstadoJogo* e){
 
-    int x_meio = estado->telaLargura/ 2;
-    int y_meio = estado->telaAltura / 2;
+    screenSetColor(WHITE, BLACK); 
 
-    screenSetColor(YELLOW, BLACK);
+    screenGotoxy(e->jogador.pos.x, e->jogador.pos.y);
+    printf("%s", e->jogador.simbolo);
 
 
-    screenGotoxy(x_meio - 10,y_meio - 2);
-    printf("====================");
-
-    screenGotoxy(x_meio - 5, y_meio);
-    printf("TIDE HIT!");
-
-    screenGotoxy(x_meio - 10, y_meio + 2);
-    printf("====================");
-    screenSetColor(WHITE, BLACK);
-
-    screenGotoxy(x_meio - 12, y_meio + 5);
-    printf("Pressione 'q' para sair");
 
     screenSetColor(WHITE, BLACK);
-    screenGotoxy(2, estado->telaAltura - 1);
 
-    printf("RECORDE: %d    PONTOS: %d", estado->recordeTotal, estado->pontuacao);
 
-    screenGotoxy(estado->telaLargura - 10, estado->telaAltura - 1);
-    printf("VIDAS: %d", estado->vidas);
+    screenGotoxy(2, e->telaAltura - 1); 
+    printf("RECORDE: %d    PONTOS: %d", e->recordeTotal, e->pontuacao);
+
+
+    screenGotoxy(e->telaLargura - 10, e->telaAltura - 1);
+    printf("VIDAS: %d", e->vidas);
 }
 
 void carregarNivel(EstadoJogo* e, int nivel){
