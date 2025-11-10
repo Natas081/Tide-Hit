@@ -26,6 +26,9 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     e->perfilSelecionado = -1;
     e->deveSair = 0;
 
+    e->registroCursor = 0;
+    strcpy(e->registroIniciais, "___");
+
     e->jogador.largura = 7;
     e->jogador.pos.x = largura / 2 - 3;
     e->jogador.pos.y = altura - 2;
@@ -41,7 +44,6 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
 }
 
 void liberarEstado(EstadoJogo* estado) {
-// esses voids eu vou atualzando dps
     free(estado);
 }
 
@@ -100,7 +102,7 @@ void atualizarJogador(EstadoJogo* e, int tecla) {
         
         if (tecla == 's') {
             e->cursorMenu++;
-            if (e->cursorMenu > 2) { // 2 é a última opção ("Voltar")
+            if (e->cursorMenu > 2) {
                 e->cursorMenu = 0;
             }
         }
@@ -110,21 +112,54 @@ void atualizarJogador(EstadoJogo* e, int tecla) {
                 e->cursorMenu = 2;
             }
         }
-        else if (tecla == 13 || tecla == 10) { // ENTER
+        else if (tecla == 13 || tecla == 10) {
             
-            if (e->cursorMenu == 0) { // "Sim (Carregar)"
-                // (Para o Dia 5: e->telaAtual = TELA_CARREGAR_PERFIL;)
-                e->telaAtual = TELA_MENU_PRINCIPAL; // Volta ao menu por enquanto
+            if (e->cursorMenu == 0) {
+                e->telaAtual = TELA_MENU_PRINCIPAL;
             }
-            else if (e->cursorMenu == 1) { // "Não (Novo)"
-                // (Para o Dia 5: e->telaAtual = TELA_REGISTRAR_PERFIL;)
-                e->telaAtual = TELA_MENU_PRINCIPAL; // Volta ao menu por enquanto
+            else if (e->cursorMenu == 1) { 
+                e->telaAtual = TELA_REGISTRAR_PERFIL; 
+
+                e->registroCursor = 0;
+                strcpy(e->registroIniciais, "___");
             }
-            else if (e->cursorMenu == 2) { // "Voltar"
+            else if (e->cursorMenu == 2) {
                 e->telaAtual = TELA_MENU_PRINCIPAL;
             }
         }
     }
+
+    else if (e->telaAtual == TELA_REGISTRAR_PERFIL) {
+
+        if (tecla == 13 || tecla == 10) {
+
+            if (e->registroCursor == 3) {
+
+                e->telaAtual = TELA_MENU_PRINCIPAL;
+            }
+
+        } else if (tecla == 8) { 
+
+            if (e->registroCursor > 0) { 
+                e->registroCursor--;
+                e->registroIniciais[e->registroCursor] = '_'; 
+            }
+
+        } else if ( (tecla >= 'a' && tecla <= 'z') || (tecla >= 'A' && tecla <= 'Z') ) {
+
+            if (e->registroCursor < 3) {
+
+                if (tecla >= 'a' && tecla <= 'z') {
+                    tecla = tecla - 32;
+                }
+
+                e->registroIniciais[e->registroCursor] = (char)tecla;
+                
+                e->registroCursor++; 
+        }
+        }
+    }
+
 }
 
 void atualizarBola(EstadoJogo* e) {
@@ -159,7 +194,7 @@ void desenharTudo(EstadoJogo* e) {
         printf("Use 'w' e 's' para mover");
 
     }
-    else if (e->telaAtual == TELA_JOGO) {
+    else if(e->telaAtual == TELA_JOGO) {
 
         screenSetColor(WHITE, BLACK);
         screenGotoxy(e->jogador.pos.x, e->jogador.pos.y);
@@ -179,7 +214,7 @@ void desenharTudo(EstadoJogo* e) {
         printf("VIDAS: %d", e->vidas);
 
     }
-    else if (e->telaAtual == TELA_TOP_SCORES) {
+    else if(e->telaAtual == TELA_TOP_SCORES) {
 
         int x_meio = e->telaLargura / 2;
         int y_meio = e->telaAltura / 2;
@@ -214,11 +249,33 @@ void desenharTudo(EstadoJogo* e) {
         screenGotoxy(x_meio - 10, y_meio + 3);
         printf("%s Voltar ao Menu", (e->cursorMenu == 2) ? ">" : " ");
     }
+    else if (e->telaAtual == TELA_REGISTRAR_PERFIL) {
+        int x_meio = e->telaLargura / 2;
+        int y_meio = e->telaAltura / 2;
+
+        screenSetColor(WHITE, BLACK);
+        screenGotoxy(x_meio - 10, y_meio - 2);
+        printf("Digite suas 3 iniciais:");
+
+        screenSetColor(YELLOW, BLACK);
+        screenGotoxy(x_meio - 2, y_meio);
+        printf("%c %c %c", e->registroIniciais[0], 
+        e->registroIniciais[1], 
+        e->registroIniciais[2]);
+
+        screenSetColor(WHITE, BLACK);
+        screenGotoxy(x_meio - 2 + (e->registroCursor * 2), y_meio + 1);
+        printf("^");
+
+        screenGotoxy(x_meio - 14, y_meio + 4);
+        printf("Digite 3 letras. Use BACKSPACE para apagar.");
+        screenGotoxy(x_meio - 12, y_meio + 5);
+        printf("Aperte ENTER para confirmar (depois das 3)");
+    }
 
 }
 
 void carregarNivel(EstadoJogo* e, int nivel) {
-
 }
 
 void carregarTopScores(EstadoJogo* e) {
@@ -231,7 +288,5 @@ void carregarTopScores(EstadoJogo* e) {
 
     e->numPerfis = 2;
 }
-
 void salvarTopScores(EstadoJogo* e) {
-
 }
