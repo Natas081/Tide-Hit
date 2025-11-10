@@ -25,13 +25,15 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     strcpy(e->registroIniciais, "___");
     e->jogador.largura = 100;
     e->jogador.pos.x = largura / 2 - (e->jogador.largura / 2);
-    e->jogador.pos.y = altura - 40;
+    e->jogador.pos.y = altura - 60;
     e->jogador.simbolo = "=======";
     e->bola.pos.x = largura / 2;
-    e->bola.pos.y = altura - 50;
+    e->bola.pos.y = altura - 70;
     e->bola.vel.dx = 1;
     e->bola.vel.dy = -1;
     e->bola.simbolo = 'O';
+    e->mostrarDicaControle = false;
+    e->timerDicaControle = 0.0f;
 
     return e;
 }
@@ -64,6 +66,13 @@ void atualizarJogador(EstadoJogo* e) {
         }
     }
     else if (e->telaAtual == TELA_JOGO) {
+        if (e->mostrarDicaControle) {
+            e->timerDicaControle -= GetFrameTime();
+            if (e->timerDicaControle <= 0.0f) {
+                e->mostrarDicaControle = false;
+            }
+        }
+
         if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
             if (e->jogador.pos.x > 0) {
                 e->jogador.pos.x -= 7;
@@ -131,6 +140,8 @@ void atualizarJogador(EstadoJogo* e) {
                     e->perfilSelecionado = 9;
                 }
                 e->telaAtual = TELA_JOGO;
+                e->mostrarDicaControle = true;
+                e->timerDicaControle = 3.0f;
             }
         }
     }
@@ -140,7 +151,9 @@ void atualizarBola(EstadoJogo* e) { }
 void verificarColisoes(EstadoJogo* e) { }
 
 void desenharTudo(EstadoJogo* e, Texture2D logo) { 
-    DrawText("Pressione ESC para fechar", 10, 10, 20, DARKGRAY);
+    const char* escText = "Pressione ESC para fechar";
+    int escTextWidth = MeasureText(escText, 20);
+    DrawText(escText, e->telaLargura - escTextWidth - 10, e->telaAltura - 30, 20, DARKGRAY);
 
     if (e->telaAtual == TELA_MENU_PRINCIPAL) {
         int x_meio = e->telaLargura / 2;
@@ -154,16 +167,26 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
         DrawText(TextFormat("%s Iniciar Jogo", (e->cursorMenu == 0) ? ">" : " "), x_meio - MeasureText("> Iniciar Jogo", fontSize)/2, y_meio + 50, fontSize, WHITE);
         DrawText(TextFormat("%s Top Scores", (e->cursorMenu == 1) ? ">" : " "), x_meio - MeasureText("> Top Scores", fontSize)/2, y_meio + spacing + 50, fontSize, WHITE);
         DrawText(TextFormat("%s Sair", (e->cursorMenu == 2) ? ">" : " "), x_meio - MeasureText("> Sair", fontSize)/2, y_meio + spacing*2 + 50, fontSize, WHITE);
-        DrawText("Use 'w' e 's' para mover", x_meio - MeasureText("Use 'w' e 's' para mover", 20)/2, y_meio + 200, 20, GRAY);
     }
     else if (e->telaAtual == TELA_JOGO) {
-        DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
         int recordeAtual = 0;
+        char iniciaisJogador[4] = "???";
         if (e->perfilSelecionado != -1) {
             recordeAtual = e->perfis[e->perfilSelecionado].recorde;
+            strcpy(iniciaisJogador, e->perfis[e->perfilSelecionado].iniciais);
         }
-        DrawText(TextFormat("RECORDE: %d    PONTOS: %d", recordeAtual, e->pontuacao), 20, e->telaAltura - 30, 20, WHITE);
-        DrawText(TextFormat("VIDAS: %d", e->vidas), e->telaLargura - 100, e->telaAltura - 30, 20, WHITE);
+        
+        DrawText(TextFormat("RECORDE(%s): %d", iniciaisJogador, recordeAtual), 20, 10, 20, WHITE);
+        DrawText(TextFormat("PONTOS: %d", e->pontuacao), e->telaLargura / 2 - MeasureText(TextFormat("PONTOS: %d", e->pontuacao), 20)/2, 10, 20, WHITE);
+        DrawText(TextFormat("VIDAS: %d", e->vidas), e->telaLargura - MeasureText(TextFormat("VIDAS: %d", e->vidas), 20) - 20, 10, 20, WHITE);
+
+        DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
+
+        if (e->mostrarDicaControle) {
+            const char* dicaControle = "Use 'a' e 'd' para mover";
+            int dicaWidth = MeasureText(dicaControle, 20);
+            DrawText(dicaControle, e->telaLargura / 2 - dicaWidth / 2, e->telaAltura / 2, 20, GRAY);
+        }
     }
     else if (e->telaAtual == TELA_TOP_SCORES) {
         int x_meio = e->telaLargura / 2;
@@ -174,7 +197,7 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
             sprintf(textoPerfil, "%d. %s   %d", i + 1, e->perfis[i].iniciais, e->perfis[i].recorde);
             DrawText(textoPerfil, x_meio - MeasureText(textoPerfil, 20)/2, y_meio - 30 + (i*30), 20, WHITE);
         }
-        DrawText("Pressione ENTER para voltar", x_meio - MeasureText("Pressione ENTER para voltar", 20)/2, y_meio + 100, 20, GRAY);
+        DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + 100, 20, GRAY);
     }
     else if (e->telaAtual == TELA_PERGUNTA_PERFIL) {
         int x_meio = e->telaLargura / 2;

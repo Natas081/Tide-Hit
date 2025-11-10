@@ -55,16 +55,26 @@ typedef struct EstadoJogo {
     int perfilSelecionado;
     char registroIniciais[4];
     int registroCursor;
+    bool mostrarDicaControle;
+    float timerDicaControle;
 } EstadoJogo;
 
 EstadoJogo* criarEstadoInicial(int largura, int altura);
+
 void liberarEstado(EstadoJogo* estado);
+
 void atualizarJogador(EstadoJogo* estado); 
+
 void atualizarBola(EstadoJogo* estado);
+
 void verificarColisoes(EstadoJogo* estado);
+
 void desenharTudo(EstadoJogo* estado, Texture2D logo); 
+
 void carregarNivel(EstadoJogo* estado, int nivel);
+
 void carregarTopScores(EstadoJogo* estado);
+
 void salvarTopScores(EstadoJogo* estado);
 
 #endif
