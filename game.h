@@ -9,6 +9,7 @@
 #define TELA_PERGUNTA_PERFIL 3
 #define TELA_REGISTRAR_PERFIL 4
 #define TELA_SELECIONAR_PERFIL 5
+#define TELA_PAUSE 6
 
 typedef struct {
     int x;
@@ -57,6 +58,7 @@ typedef struct EstadoJogo {
     int registroCursor;
     bool mostrarDicaControle;
     float timerDicaControle;
+    int cursorPause;
 } EstadoJogo;
 
 EstadoJogo* criarEstadoInicial(int largura, int altura);

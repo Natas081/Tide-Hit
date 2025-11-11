@@ -4,6 +4,8 @@
 #include "game.h"
 #include <stdio.h> 
 
+void desenharTelaJogo(EstadoJogo* e);
+
 EstadoJogo* criarEstadoInicial(int largura, int altura) {
 
     EstadoJogo* e = malloc(sizeof(EstadoJogo));
@@ -34,6 +36,7 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     e->bola.simbolo = 'O';
     e->mostrarDicaControle = false;
     e->timerDicaControle = 0.0f;
+    e->cursorPause = 0;
 
     return e;
 }
@@ -66,6 +69,11 @@ void atualizarJogador(EstadoJogo* e) {
         }
     }
     else if (e->telaAtual == TELA_JOGO) {
+        if (IsKeyPressed(KEY_P)) {
+            e->telaAtual = TELA_PAUSE;
+            e->cursorPause = 0;
+        }
+
         if (e->mostrarDicaControle) {
             e->timerDicaControle -= GetFrameTime();
             if (e->timerDicaControle <= 0.0f) {
@@ -85,19 +93,40 @@ void atualizarJogador(EstadoJogo* e) {
             }
         }
     }
+    else if (e->telaAtual == TELA_PAUSE) {
+        if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
+            e->cursorPause++;
+            if (e->cursorPause > 1) e->cursorPause = 0;
+        }
+        if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
+            e->cursorPause--;
+            if (e->cursorPause < 0) e->cursorPause = 1;
+        }
+        if (IsKeyPressed(KEY_ENTER)) {
+            if (e->cursorPause == 0) {
+                e->telaAtual = TELA_JOGO;
+            } else if (e->cursorPause == 1) {
+                e->telaAtual = TELA_MENU_PRINCIPAL;
+            }
+        }
+    }
     else if (e->telaAtual == TELA_TOP_SCORES) {
-        if (IsKeyPressed(KEY_Q) || IsKeyPressed(KEY_ENTER)) {
+        if (IsKeyPressed(KEY_Q)) {
             e->telaAtual = TELA_MENU_PRINCIPAL;
         }
     }
     else if (e->telaAtual == TELA_PERGUNTA_PERFIL) {
+        if (IsKeyPressed(KEY_Q)) {
+            e->telaAtual = TELA_MENU_PRINCIPAL;
+        }
+
         if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
             e->cursorMenu++;
-            if (e->cursorMenu > 2) e->cursorMenu = 0;
+            if (e->cursorMenu > 1) e->cursorMenu = 0;
         }
         if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
             e->cursorMenu--;
-            if (e->cursorMenu < 0) e->cursorMenu = 2;
+            if (e->cursorMenu < 0) e->cursorMenu = 1;
         }
         if (IsKeyPressed(KEY_ENTER)) {
             if (e->cursorMenu == 0) {
@@ -106,12 +135,14 @@ void atualizarJogador(EstadoJogo* e) {
                 e->telaAtual = TELA_REGISTRAR_PERFIL; 
                 e->registroCursor = 0;
                 strcpy(e->registroIniciais, "___");
-            } else if (e->cursorMenu == 2) {
-                e->telaAtual = TELA_MENU_PRINCIPAL;
             }
         }
     }
     else if (e->telaAtual == TELA_REGISTRAR_PERFIL) {
+        if (IsKeyPressed(KEY_Q)) {
+            e->telaAtual = TELA_PERGUNTA_PERFIL;
+        }
+
         int tecla = GetCharPressed();
         while (tecla > 0) {
             if (((tecla >= 'A' && tecla <= 'Z') || (tecla >= 'a' && tecla <= 'z')) && (e->registroCursor < 3)) {
@@ -150,6 +181,27 @@ void atualizarJogador(EstadoJogo* e) {
 void atualizarBola(EstadoJogo* e) { }
 void verificarColisoes(EstadoJogo* e) { }
 
+void desenharTelaJogo(EstadoJogo* e) {
+    int recordeAtual = 0;
+    char iniciaisJogador[4] = "???";
+    if (e->perfilSelecionado != -1) {
+        recordeAtual = e->perfis[e->perfilSelecionado].recorde;
+        strcpy(iniciaisJogador, e->perfis[e->perfilSelecionado].iniciais);
+    }
+    
+    DrawText(TextFormat("RECORDE(%s): %d", iniciaisJogador, recordeAtual), 20, 10, 20, WHITE);
+    DrawText(TextFormat("PONTOS: %d", e->pontuacao), e->telaLargura / 2 - MeasureText(TextFormat("PONTOS: %d", e->pontuacao), 20)/2, 10, 20, WHITE);
+    DrawText(TextFormat("VIDAS: %d", e->vidas), e->telaLargura - MeasureText(TextFormat("VIDAS: %d", e->vidas), 20) - 20, 10, 20, WHITE);
+
+    DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
+
+    if (e->mostrarDicaControle) {
+        const char* dicaControle = "Use 'a' e 'd' para mover";
+        int dicaWidth = MeasureText(dicaControle, 20);
+        DrawText(dicaControle, e->telaLargura / 2 - dicaWidth / 2, e->telaAltura / 2, 20, GRAY);
+    }
+}
+
 void desenharTudo(EstadoJogo* e, Texture2D logo) { 
     const char* escText = "Pressione ESC para fechar";
     int escTextWidth = MeasureText(escText, 20);
@@ -169,24 +221,19 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
         DrawText(TextFormat("%s Sair", (e->cursorMenu == 2) ? ">" : " "), x_meio - MeasureText("> Sair", fontSize)/2, y_meio + spacing*2 + 50, fontSize, WHITE);
     }
     else if (e->telaAtual == TELA_JOGO) {
-        int recordeAtual = 0;
-        char iniciaisJogador[4] = "???";
-        if (e->perfilSelecionado != -1) {
-            recordeAtual = e->perfis[e->perfilSelecionado].recorde;
-            strcpy(iniciaisJogador, e->perfis[e->perfilSelecionado].iniciais);
-        }
+        desenharTelaJogo(e);
+    }
+    else if (e->telaAtual == TELA_PAUSE) {
+        desenharTelaJogo(e);
+
+        DrawRectangle(0, 0, e->telaLargura, e->telaAltura, ColorAlpha(BLACK, 0.7f));
+
+        int x_meio = e->telaLargura / 2;
+        int y_meio = e->telaAltura / 2;
         
-        DrawText(TextFormat("RECORDE(%s): %d", iniciaisJogador, recordeAtual), 20, 10, 20, WHITE);
-        DrawText(TextFormat("PONTOS: %d", e->pontuacao), e->telaLargura / 2 - MeasureText(TextFormat("PONTOS: %d", e->pontuacao), 20)/2, 10, 20, WHITE);
-        DrawText(TextFormat("VIDAS: %d", e->vidas), e->telaLargura - MeasureText(TextFormat("VIDAS: %d", e->vidas), 20) - 20, 10, 20, WHITE);
-
-        DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
-
-        if (e->mostrarDicaControle) {
-            const char* dicaControle = "Use 'a' e 'd' para mover";
-            int dicaWidth = MeasureText(dicaControle, 20);
-            DrawText(dicaControle, e->telaLargura / 2 - dicaWidth / 2, e->telaAltura / 2, 20, GRAY);
-        }
+        DrawText("PAUSADO", x_meio - MeasureText("PAUSADO", 40)/2, y_meio - 80, 40, WHITE);
+        DrawText(TextFormat("%s Retornar", (e->cursorPause == 0) ? ">" : " "), x_meio - MeasureText("> Retornar", 30)/2, y_meio, 30, WHITE);
+        DrawText(TextFormat("%s Voltar para o Menu", (e->cursorPause == 1) ? ">" : " "), x_meio - MeasureText("> Voltar para o Menu", 30)/2, y_meio + 40, 30, WHITE);
     }
     else if (e->telaAtual == TELA_TOP_SCORES) {
         int x_meio = e->telaLargura / 2;
@@ -205,7 +252,7 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
         DrawText("Você já tem um perfil cadastrado?", x_meio - MeasureText("Você já tem um perfil cadastrado?", 30)/2, y_meio - 50, 30, WHITE);
         DrawText(TextFormat("%s Sim (Carregar Perfil)", (e->cursorMenu == 0) ? ">" : " "), x_meio - MeasureText("> Sim (Carregar Perfil)", 20)/2, y_meio + 10, 20, WHITE);
         DrawText(TextFormat("%s Não (Novo Perfil)", (e->cursorMenu == 1) ? ">" : " "), x_meio - MeasureText("> Não (Novo Perfil)", 20)/2, y_meio + 40, 20, WHITE);
-        DrawText(TextFormat("%s Voltar ao Menu", (e->cursorMenu == 2) ? ">" : " "), x_meio - MeasureText("> Voltar ao Menu", 20)/2, y_meio + 70, 20, WHITE);
+        DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + 100, 20, GRAY);
     }
     else if (e->telaAtual == TELA_REGISTRAR_PERFIL) {
         int x_meio = e->telaLargura / 2;
@@ -219,6 +266,7 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
         }
         DrawText("Use BACKSPACE para apagar.", x_meio - MeasureText("Use BACKSPACE para apagar.", 20)/2, y_meio + 100, 20, GRAY);
         DrawText("Aperte ENTER para confirmar (depois das 3)", x_meio - MeasureText("Aperte ENTER para confirmar (depois das 3)", 20)/2, y_meio + 130, 20, GRAY);
+        DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + 160, 20, GRAY);
     }
 }
 
