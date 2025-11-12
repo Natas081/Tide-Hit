@@ -18,8 +18,13 @@ void initGame(EstadoJogo* e) {
     e->jogador.pos.y = e->telaAltura - 60;
     e->bola.pos.x = e->telaLargura / 2;
     e->bola.pos.y = e->telaAltura - 70;
-    e->bola.vel.dx = 1;
-    e->bola.vel.dy = -1;
+    
+    if (rand() % 2 == 0) {
+        e->bola.vel.dx = -4;
+    } else {
+        e->bola.vel.dx = 4;
+    }
+    e->bola.vel.dy = -4;
     
     e->mostrarDicaControle = true;
     e->timerDicaControle = 3.0f;
@@ -210,7 +215,51 @@ void atualizarJogador(EstadoJogo* e) {
     }
 }
 
-void atualizarBola(EstadoJogo* e) { }
+void atualizarBola(EstadoJogo* e) {
+    e->bola.pos.x += e->bola.vel.dx;
+    e->bola.pos.y += e->bola.vel.dy;
+
+    if (e->bola.pos.y <= 0) {
+        e->bola.pos.y = 0;
+        e->bola.vel.dy *= -1;
+    }
+    if (e->bola.pos.x <= 0) {
+        e->bola.pos.x = 0;
+        e->bola.vel.dx *= -1;
+    }
+    if (e->bola.pos.x >= e->telaLargura) {
+        e->bola.pos.x = e->telaLargura;
+        e->bola.vel.dx *= -1;
+    }
+
+    if (e->bola.pos.y >= e->telaAltura) {
+        e->vidas--;
+        
+        if (e->vidas <= 0) {
+            if (e->perfilSelecionado != -1) {
+                if (e->pontuacao > e->perfis[e->perfilSelecionado].recorde) {
+                    e->perfis[e->perfilSelecionado].recorde = e->pontuacao;
+                    salvarTopScores(e);
+                }
+            }
+            e->telaAtual = TELA_MENU_PRINCIPAL;
+            initGame(e);
+        } else {
+            e->jogador.pos.x = e->telaLargura / 2 - (e->jogador.largura / 2);
+            e->jogador.pos.y = e->telaAltura - 60;
+            e->bola.pos.x = e->telaLargura / 2;
+            e->bola.pos.y = e->telaAltura - 70;
+            
+            if (rand() % 2 == 0) {
+                e->bola.vel.dx = -4;
+            } else {
+                e->bola.vel.dx = 4;
+            }
+            e->bola.vel.dy = -4;
+        }
+    }
+}
+
 void verificarColisoes(EstadoJogo* e) { }
 
 void desenharTelaJogo(EstadoJogo* e) {
@@ -226,6 +275,8 @@ void desenharTelaJogo(EstadoJogo* e) {
     DrawText(TextFormat("VIDAS: %d", e->vidas), e->telaLargura - MeasureText(TextFormat("VIDAS: %d", e->vidas), 20) - 20, 10, 20, WHITE);
 
     DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
+
+    DrawText(TextFormat("%c", e->bola.simbolo), e->bola.pos.x, e->bola.pos.y, 20, WHITE);
 
     if (e->mostrarDicaControle) {
         const char* dicaControle = "Use 'a' e 'd' para mover";
@@ -254,6 +305,7 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
     }
     else if (e->telaAtual == TELA_JOGO) {
         desenharTelaJogo(e);
+        DrawText("Pressione P para pausar", 10, e->telaAltura - 30, 20, DARKGRAY);
     }
     else if (e->telaAtual == TELA_PAUSE) {
         desenharTelaJogo(e);
@@ -296,7 +348,7 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
             DrawRectangle(x_cursor, y_meio + 45, 25, 5, YELLOW);
         }
         DrawText("Use BACKSPACE para apagar.", x_meio - MeasureText("Use BACKSPACE para apagar.", 20)/2, y_meio + 100, 20, GRAY);
-        DrawText("Aperte ENTER para confirmar (depois das 3)", x_meio - MeasureText("Aperte ENTER para confirmar (depois das 3)", 20)/2, y_meio + 130, 20, GRAY);
+        DrawText("Aperte ENTER para confirmar (depo-s das 3)", x_meio - MeasureText("Aperte ENTER para confirmar (depois das 3)", 20)/2, y_meio + 130, 20, GRAY);
         DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + 160, 20, GRAY);
     }
     else if (e->telaAtual == TELA_SELECIONAR_PERFIL) {

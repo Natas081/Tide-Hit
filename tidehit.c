@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "game.h"
 #include <stdlib.h> 
+#include <time.h>
 
 #define TELA_LARGURA 800
 #define TELA_ALTURA 600
@@ -8,6 +9,7 @@
 int main(void)
 {
     InitWindow(TELA_LARGURA, TELA_ALTURA, "Tide Hit!");
+    srand(time(NULL));
 
     Texture2D logo = LoadTexture("IMG_3363.jpeg");
 
