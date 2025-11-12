@@ -219,16 +219,16 @@ void atualizarBola(EstadoJogo* e) {
     e->bola.pos.x += e->bola.vel.dx;
     e->bola.pos.y += e->bola.vel.dy;
 
-    if (e->bola.pos.y <= 0) {
-        e->bola.pos.y = 0;
+    if (e->bola.pos.y <= 10) {
+        e->bola.pos.y = 10;
         e->bola.vel.dy *= -1;
     }
-    if (e->bola.pos.x <= 0) {
-        e->bola.pos.x = 0;
+    if (e->bola.pos.x <= 10) {
+        e->bola.pos.x = 10;
         e->bola.vel.dx *= -1;
     }
-    if (e->bola.pos.x >= e->telaLargura) {
-        e->bola.pos.x = e->telaLargura;
+    if (e->bola.pos.x >= e->telaLargura - 10) {
+        e->bola.pos.x = e->telaLargura - 10;
         e->bola.vel.dx *= -1;
     }
 
@@ -260,7 +260,18 @@ void atualizarBola(EstadoJogo* e) {
     }
 }
 
-void verificarColisoes(EstadoJogo* e) { }
+void verificarColisoes(EstadoJogo* e) {
+    Vector2 bolaCentro = { (float)e->bola.pos.x, (float)e->bola.pos.y };
+    float bolaRaio = 10.0f;
+    Rectangle jogadorRect = { (float)e->jogador.pos.x, (float)e->jogador.pos.y, (float)e->jogador.largura, 20.0f };
+
+    if (CheckCollisionCircleRec(bolaCentro, bolaRaio, jogadorRect)) {
+        if (e->bola.vel.dy > 0) {
+            e->bola.vel.dy *= -1;
+            e->bola.pos.y = e->jogador.pos.y - bolaRaio;
+        }
+    }
+}
 
 void desenharTelaJogo(EstadoJogo* e) {
     int recordeAtual = 0;
@@ -276,7 +287,7 @@ void desenharTelaJogo(EstadoJogo* e) {
 
     DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
 
-    DrawText(TextFormat("%c", e->bola.simbolo), e->bola.pos.x, e->bola.pos.y, 20, WHITE);
+    DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, WHITE);
 
     if (e->mostrarDicaControle) {
         const char* dicaControle = "Use 'a' e 'd' para mover";
@@ -348,7 +359,7 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
             DrawRectangle(x_cursor, y_meio + 45, 25, 5, YELLOW);
         }
         DrawText("Use BACKSPACE para apagar.", x_meio - MeasureText("Use BACKSPACE para apagar.", 20)/2, y_meio + 100, 20, GRAY);
-        DrawText("Aperte ENTER para confirmar (depo-s das 3)", x_meio - MeasureText("Aperte ENTER para confirmar (depois das 3)", 20)/2, y_meio + 130, 20, GRAY);
+        DrawText("Aperte ENTER para confirmar (depois das 3)", x_meio - MeasureText("Aperte ENTER para confirmar (depois das 3)", 20)/2, y_meio + 130, 20, GRAY);
         DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + 160, 20, GRAY);
     }
     else if (e->telaAtual == TELA_SELECIONAR_PERFIL) {
