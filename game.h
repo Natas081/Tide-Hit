@@ -1,91 +1,95 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "raylib.h" 
+
 #define MAX_PERFIS 10
 
-typedef enum {
-    TELA_MENU_PRINCIPAL = 0,
-    TELA_JOGO,
-    TELA_PAUSE,
-    TELA_TOP_SCORES,
-    TELA_PERGUNTA_PERFIL,
-    TELA_REGISTRAR_PERFIL,
-    TELA_SELECIONAR_PERFIL
-} TelaJogo;
+#define BLOCO_LINHAS 5
+#define BLOCO_COLUNAS 10
+
+#define TELA_MENU_PRINCIPAL 0
+#define TELA_JOGO 1
+#define TELA_TOP_SCORES 2
+#define TELA_PERGUNTA_PERFIL 3
+#define TELA_REGISTRAR_PERFIL 4
+#define TELA_SELECIONAR_PERFIL 5
+#define TELA_PAUSE 6
 
 typedef struct {
-    float x, y;
-} Vetor2;
+    int x;
+    int y;
+} Posicao;
 
 typedef struct {
-    float dx, dy;
+    int dx;
+    int dy;
 } Velocidade;
 
 typedef struct {
-    Vetor2 pos;
-    float largura;
-    const char* simbolo; 
-} Raquete;
+    Posicao pos;
+    int largura;
+    char* simbolo;
+} Jogador;
 
 typedef struct {
-    Vetor2 pos;
+    Posicao pos;
     Velocidade vel;
     char simbolo;
 } Bola;
-
-typedef struct Bloco {
-    int x, y, hp;
-    struct Bloco *proximo;
-} Bloco;
 
 typedef struct {
     char iniciais[4];
     int recorde;
 } Perfil;
 
-typedef struct {
+typedef struct Bloco {
+    Rectangle rect;
+    bool ativo;
+    Color cor;
+    struct Bloco *proximo;
+} Bloco;
+
+typedef struct EstadoJogo {
     int telaLargura;
     int telaAltura;
-    int timerSpeed;
-    Bloco *listaDeBlocos;
     int pontuacao;
     int vidas;
     int nivel;
-    TelaJogo telaAtual;
-    int cursorMenu;
-    Raquete jogador;
-    Bola bola;
+    int timerSpeed;
     int deveSair;
-
-    int numPerfis; 
+    int telaAtual;
+    int cursorMenu;
+    Jogador jogador;
+    Bola bola;
+    Bloco *listaDeBlocos;
     Perfil perfis[MAX_PERFIS];
-    int perfilSelecionado; 
-    int registroCursor;
+    int numPerfis;
+    int perfilSelecionado;
     char registroIniciais[4];
-  
+    int registroCursor;
     bool mostrarDicaControle;
     float timerDicaControle;
-
-    int cursorPause; 
+    int cursorPause;
 } EstadoJogo;
 
 EstadoJogo* criarEstadoInicial(int largura, int altura);
 
 void liberarEstado(EstadoJogo* estado);
 
-void atualizarJogador(EstadoJogo* e);
+void atualizarJogador(EstadoJogo* estado); 
 
-void atualizarBola(EstadoJogo* e);
+void atualizarBola(EstadoJogo* estado);
 
-void verificarColisoes(EstadoJogo* e);
+void verificarColisoes(EstadoJogo* estado);
 
-void desenharTudo(EstadoJogo* e, Texture2D logo);
+void desenharTudo(EstadoJogo* estado, Texture2D logo); 
 
-void carregarNivel(EstadoJogo* e, int nivel);
+void carregarNivel(EstadoJogo* estado, int nivel);
 
-void carregarTopScores(EstadoJogo* e);
+void carregarTopScores(EstadoJogo* estado);
 
-void salvarTopScores(EstadoJogo* e);
+void salvarTopScores(EstadoJogo* estado);
 
 void initGame(EstadoJogo* e);
 

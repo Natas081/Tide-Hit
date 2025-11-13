@@ -8,12 +8,67 @@
 
 void desenharTelaJogo(EstadoJogo* e);
 
+void limparBlocos(EstadoJogo* e) {
+    Bloco *atual = e->listaDeBlocos;
+    while (atual != NULL) {
+        Bloco *proximo = atual->proximo;
+        free(atual);
+        atual = proximo;
+    }
+    e->listaDeBlocos = NULL;
+}
+
+void carregarNivel(EstadoJogo* e, int nivel) {
+    limparBlocos(e);
+
+    int mapaNivel[BLOCO_LINHAS][BLOCO_COLUNAS] = {
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+    };
+    
+    int larguraBloco = 60;
+    int alturaBloco = 20;
+    int espacoHorizontal = 20;
+    int espacoVertical = 10;
+    int offsetHorizontal = (e->telaLargura - (BLOCO_COLUNAS * (larguraBloco + espacoHorizontal)) + espacoHorizontal) / 2;
+    int offsetVertical = 50;
+    
+Color cores[BLOCO_LINHAS] = {
+    (Color){ 100, 100, 100, 255 },
+    (Color){ 120, 120, 120, 255 },
+    (Color){  80,  80, 160, 255 },
+    (Color){  60,  60, 180, 255 },
+    (Color){ 100,  60, 180, 255 }
+};
+
+    for (int i = 0; i < BLOCO_LINHAS; i++) {
+        for (int j = 0; j < BLOCO_COLUNAS; j++) {
+            if (mapaNivel[i][j] == 1) {
+                Bloco *novoBloco = (Bloco*)malloc(sizeof(Bloco));
+                if (novoBloco == NULL) return;
+                
+                novoBloco->rect.x = offsetHorizontal + j * (larguraBloco + espacoHorizontal);
+                novoBloco->rect.y = offsetVertical + i * (alturaBloco + espacoVertical);
+                novoBloco->rect.width = larguraBloco;
+                novoBloco->rect.height = alturaBloco;
+                novoBloco->ativo = true;
+                novoBloco->cor = cores[i];
+                
+                novoBloco->proximo = e->listaDeBlocos;
+                e->listaDeBlocos = novoBloco;
+            }
+        }
+    }
+}
+
 void initGame(EstadoJogo* e) {
     e->timerSpeed = 50;
     e->pontuacao = 0;
     e->vidas = 3;
     e->nivel = 1;
-    
     e->jogador.pos.x = e->telaLargura / 2 - (e->jogador.largura / 2);
     e->jogador.pos.y = e->telaAltura - 60;
     e->bola.pos.x = e->telaLargura / 2;
@@ -29,6 +84,8 @@ void initGame(EstadoJogo* e) {
     e->mostrarDicaControle = true;
     e->timerDicaControle = 3.0f;
     e->cursorPause = 0;
+    
+    carregarNivel(e, 1);
 }
 
 EstadoJogo* criarEstadoInicial(int largura, int altura) {
@@ -57,6 +114,7 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
 
 void liberarEstado(EstadoJogo* estado) {
     salvarTopScores(estado);
+    limparBlocos(estado);
     free(estado);
 }
 
@@ -161,7 +219,7 @@ void atualizarJogador(EstadoJogo* e) {
         }
 
         int tecla = GetCharPressed();
-        while (tecla > 0) {
+        while (tecla > 0){
             if (((tecla >= 'A' && tecla <= 'Z') || (tecla >= 'a' && tecla <= 'z')) && (e->registroCursor < 3)) {
                 if (tecla >= 'a' && tecla <= 'z') tecla = tecla - 32; 
                 e->registroIniciais[e->registroCursor] = (char)tecla;
@@ -214,7 +272,6 @@ void atualizarJogador(EstadoJogo* e) {
         }
     }
 }
-
 void atualizarBola(EstadoJogo* e) {
     e->bola.pos.x += e->bola.vel.dx;
     e->bola.pos.y += e->bola.vel.dy;
@@ -223,11 +280,11 @@ void atualizarBola(EstadoJogo* e) {
         e->bola.pos.y = 10;
         e->bola.vel.dy *= -1;
     }
-    if (e->bola.pos.x <= 10) {
+    if (e->bola.pos.x <= 10){
         e->bola.pos.x = 10;
         e->bola.vel.dx *= -1;
     }
-    if (e->bola.pos.x >= e->telaLargura - 10) {
+    if(e->bola.pos.x >= e->telaLargura - 10) {
         e->bola.pos.x = e->telaLargura - 10;
         e->bola.vel.dx *= -1;
     }
@@ -235,16 +292,15 @@ void atualizarBola(EstadoJogo* e) {
     if (e->bola.pos.y >= e->telaAltura) {
         e->vidas--;
         
-        if (e->vidas <= 0) {
-            if (e->perfilSelecionado != -1) {
-                if (e->pontuacao > e->perfis[e->perfilSelecionado].recorde) {
-                    e->perfis[e->perfilSelecionado].recorde = e->pontuacao;
-                    salvarTopScores(e);
-                }
-            }
+    if(e->vidas <= 0) {
+        if(e->perfilSelecionado != -1) {
+            if (e->pontuacao > e->perfis[e->perfilSelecionado].recorde) {
+                e->perfis[e->perfilSelecionado].recorde = e->pontuacao;
+                salvarTopScores(e);
+                }}
             e->telaAtual = TELA_MENU_PRINCIPAL;
-            initGame(e);
-        } else {
+            initGame(e);}
+        else{
             e->jogador.pos.x = e->telaLargura / 2 - (e->jogador.largura / 2);
             e->jogador.pos.y = e->telaAltura - 60;
             e->bola.pos.x = e->telaLargura / 2;
@@ -271,6 +327,33 @@ void verificarColisoes(EstadoJogo* e) {
             e->bola.pos.y = e->jogador.pos.y - bolaRaio;
         }
     }
+    
+    Bloco *blocoAtual = e->listaDeBlocos;
+    Bloco *blocoAnterior = NULL;
+
+    while (blocoAtual != NULL) {
+        Bloco *proximoBloco = blocoAtual->proximo;
+
+        if (blocoAtual->ativo) {
+            if (CheckCollisionCircleRec(bolaCentro, bolaRaio, blocoAtual->rect)) {
+                e->bola.vel.dy *= -1;
+                e->pontuacao += 10;
+                
+                if (blocoAnterior == NULL) {
+                    e->listaDeBlocos = proximoBloco;
+                } else {
+                    blocoAnterior->proximo = proximoBloco;
+                }
+                
+                free(blocoAtual);
+                blocoAtual = NULL; 
+                return; 
+            }}
+        
+        if (blocoAtual != NULL) {
+            blocoAnterior = blocoAtual;
+            blocoAtual = proximoBloco;}
+}
 }
 
 void desenharTelaJogo(EstadoJogo* e) {
@@ -289,13 +372,20 @@ void desenharTelaJogo(EstadoJogo* e) {
 
     DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, WHITE);
 
+    Bloco *blocoAtual = e->listaDeBlocos;
+    while (blocoAtual != NULL) {
+        if (blocoAtual->ativo) {
+            DrawRectangleRec(blocoAtual->rect, blocoAtual->cor);
+        }
+        blocoAtual = blocoAtual->proximo;
+    }
+
     if (e->mostrarDicaControle) {
         const char* dicaControle = "Use 'a' e 'd' para mover";
         int dicaWidth = MeasureText(dicaControle, 20);
         DrawText(dicaControle, e->telaLargura / 2 - dicaWidth / 2, e->telaAltura / 2, 20, GRAY);
     }
 }
-
 void desenharTudo(EstadoJogo* e, Texture2D logo) { 
     const char* escText = "Pressione ESC para fechar";
     int escTextWidth = MeasureText(escText, 20);
@@ -375,14 +465,9 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
             sprintf(textoPerfil, "%s %s (Recorde: %d)", (e->cursorMenu == i) ? ">" : " ", e->perfis[i].iniciais, e->perfis[i].recorde);
             DrawText(textoPerfil, x_meio - MeasureText(textoPerfil, 25)/2, y_meio - 30 + (i*35), 25, cor);
         }
-        
         DrawText("Pressione ENTER para selecionar", x_meio - MeasureText("Pressione ENTER para selecionar", 20)/2, y_meio + (numOpcoes * 35) + 30, 20, GRAY);
         DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + (numOpcoes * 35) + 60, 20, GRAY);
-    }
-}
-
-void carregarNivel(EstadoJogo* e, int nivel) {
-}
+}}
 
 void carregarTopScores(EstadoJogo* e) {
     FILE *f = fopen(SCORE_FILE, "rb");
@@ -398,8 +483,7 @@ void carregarTopScores(EstadoJogo* e) {
             e->numPerfis = MAX_PERFIS;
         }
         fread(e->perfis, sizeof(Perfil), e->numPerfis, f);
-    }
-    
+    }  
     fclose(f);
 }
 
