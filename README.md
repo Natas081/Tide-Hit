@@ -38,3 +38,23 @@ Ambiente Linux (ou WSL no Windows) utilizando `Make`.
 1. Clone este repositório:
    ```bash
    git clone [https://github.com/Natas081/Tide-Hit.git](https://github.com/Natas081/Tide-Hit.git)
+
+   ✅ RESUMO BEM FÁCIL: Como fizemos para rodar o jogo no Linux
+
+Instalamos coisas que o Linux precisa para rodar jogos.
+Tipo “programas de suporte”. Sem isso o computador não entende gráficos, janelas, sons etc.
+
+Baixamos a Raylib, que é a “ferramenta” que seu jogo usa.
+
+Compilamos a Raylib no Linux.
+Isso é como “montar” a Raylib dentro do sistema para que o Linux saiba usar ela.
+
+Instalamos a Raylib no sistema, para qualquer jogo poder usar.
+
+Entramos na pasta onde seu jogo está, que fica dentro do Windows, mas acessamos pelo Linux.
+
+Descobrimos qual arquivo tinha o main, ou seja, onde o jogo começa.
+
+Compilamos seu jogo usando o Raylib, juntando seus arquivos .c e a Raylib.
+
+Rodamos o jogo, e pronto — ele abriu normal no Linux.
