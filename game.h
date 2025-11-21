@@ -36,6 +36,7 @@ typedef struct {
     Posicao pos;
     Velocidade vel;
     char simbolo;
+    Color cor;
 } Bola;
 
 typedef struct {

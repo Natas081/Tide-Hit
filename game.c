@@ -137,6 +137,42 @@ void carregarNivel(EstadoJogo* e, int nivel) {
         }
     }
 }
+Color gerarCorRGB(float tempo) {
+    unsigned char r = (sin(tempo * 2.0f) * 127 + 128);
+    unsigned char g = (sin(tempo * 2.0f + 2.094f) * 127 + 128);
+    unsigned char b = (sin(tempo * 2.0f + 4.188f) * 127 + 128);
+    return (Color){ r, g, b, 255 };
+}
+
+void atualizarCorBola(EstadoJogo* e, float tempo)
+{
+    int fase = e->pontuacao / 100;      
+
+    if (fase > 7)
+        fase = 7;  
+
+    Color coresArcoIris[7] = {
+        RED,
+        ORANGE,
+        YELLOW,
+        GREEN,
+        BLUE,
+        DARKBLUE,
+        VIOLET
+    };
+
+    if (fase < 7)
+    {
+
+        e->bola.cor = coresArcoIris[fase];
+    }
+    else
+    {
+
+        e->bola.cor = gerarCorRGB(tempo);
+    }
+}
+
 
 void initGame(EstadoJogo* e) {
     e->timerSpeed = 50;
@@ -189,6 +225,8 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     e->telaAtual = TELA_MENU_PRINCIPAL;
     e->numPerfis = 0;
     e->perfilSelecionado = -1;
+    e->bola.cor = WHITE;
+
     
     carregarTopScores(e);
     initGame(e);
@@ -358,6 +396,8 @@ void atualizarJogador(EstadoJogo* e) {
 }
 
 void atualizarBola(EstadoJogo* e) {
+    atualizarCorBola(e, GetTime());
+
     e->bola.pos.x += e->bola.vel.dx;
     e->bola.pos.y += e->bola.vel.dy;
 
@@ -502,7 +542,8 @@ void desenharTelaJogo(EstadoJogo* e) {
 
     DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
 
-    DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, WHITE);
+    DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, e->bola.cor);
+
 
     Bloco *blocoAtual = e->listaDeBlocos;
     while (blocoAtual != NULL) {
