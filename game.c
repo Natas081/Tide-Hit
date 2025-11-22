@@ -9,6 +9,44 @@
 
 void desenharTelaJogo(EstadoJogo* e);
 
+void spawnarParticulas(EstadoJogo* e, float x, float y, Color cor) {
+    int count = 0;
+    for (int i = 0; i < MAX_PARTICULAS; i++) {
+        if (!e->particulas[i].ativa) {
+            e->particulas[i].ativa = true;
+            e->particulas[i].pos = (Vector2){ x, y };
+            e->particulas[i].vel = (Vector2){ (float)(rand()%10 - 5), (float)(rand()%10 - 5) };
+            e->particulas[i].cor = cor;
+            e->particulas[i].vida = 1.0f;
+            count++;
+            if (count >= 10) break;
+        }
+    }
+}
+
+void atualizarParticulas(EstadoJogo* e) {
+    for (int i = 0; i < MAX_PARTICULAS; i++) {
+        if (e->particulas[i].ativa) {
+            e->particulas[i].pos.x += e->particulas[i].vel.x;
+            e->particulas[i].pos.y += e->particulas[i].vel.y;
+            e->particulas[i].vel.y += 0.5f; 
+            e->particulas[i].vida -= 0.03f;
+            if (e->particulas[i].vida <= 0) e->particulas[i].ativa = false;
+        }
+    }
+}
+
+void spawnarPowerUp(EstadoJogo* e, float x, float y) {
+    if (!e->powerupDrop.ativo && (rand() % 100 < 15)) { 
+        e->powerupDrop.ativo = true;
+        e->powerupDrop.pos = (Vector2){ x, y };
+        int r = rand() % 3;
+        if (r == 0) e->powerupDrop.tipo = 1; 
+        else if (r == 1) e->powerupDrop.tipo = 2; 
+        else e->powerupDrop.tipo = 3; 
+    }
+}
+
 void desenharFundoPraia(int largura, int altura) {
     Color areiaSeca  = (Color){ 245, 235, 215, 255 }; 
     Color areiaUmida = (Color){ 225, 200, 160, 255 }; 
@@ -176,6 +214,7 @@ void initGame(EstadoJogo* e) {
     e->vidas = 3;
     e->nivel = 1;
     
+    e->jogador.largura = 100;
     e->jogador.pos.x = e->telaLargura / 2 - (e->jogador.largura / 2);
     e->jogador.pos.y = e->telaAltura - 60;
     e->bola.pos.x = e->telaLargura / 2;
@@ -195,6 +234,12 @@ void initGame(EstadoJogo* e) {
     e->blocosParaRespawnar = 0;
     
     e->alturaMare = e->telaAltura + 100.0f;
+
+    for(int i=0; i<MAX_PARTICULAS; i++) e->particulas[i].ativa = false;
+    e->powerupDrop.ativo = false;
+    e->tipoPowerupAtivo = 0;
+    e->timerPowerup = 0;
+    e->bolaPerfurante = false;
 
     carregarNivel(e, 1);
 }
@@ -394,6 +439,34 @@ void atualizarJogador(EstadoJogo* e) {
 
 void atualizarBola(EstadoJogo* e) {
     atualizarCorBola(e, GetTime());
+    atualizarParticulas(e);
+
+    if (e->tipoPowerupAtivo == 1) { 
+        e->timerPowerup -= GetFrameTime();
+        if (e->timerPowerup <= 0) {
+            e->tipoPowerupAtivo = 0;
+            e->jogador.largura = 100;
+        }
+    }
+
+    if (e->powerupDrop.ativo) {
+        e->powerupDrop.pos.y += 2.0f;
+        if (CheckCollisionRecs((Rectangle){e->powerupDrop.pos.x, e->powerupDrop.pos.y, 20, 20},
+                               (Rectangle){e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20})) {
+            e->powerupDrop.ativo = false;
+            
+            if (e->powerupDrop.tipo == 1) {
+                e->tipoPowerupAtivo = 1;
+                e->jogador.largura = 160;
+                e->timerPowerup = 10.0f; 
+            } else if (e->powerupDrop.tipo == 2) {
+                e->vidas++;
+            } else if (e->powerupDrop.tipo == 3) {
+                e->bolaPerfurante = true; 
+            }
+        }
+        if (e->powerupDrop.pos.y > e->telaAltura) e->powerupDrop.ativo = false;
+    }
 
     if (e->pontuacao >= 500) {
         float tempo = GetTime();
@@ -439,6 +512,10 @@ void atualizarBola(EstadoJogo* e) {
             e->telaAtual = TELA_MENU_PRINCIPAL;
             initGame(e);
         } else {
+            e->jogador.largura = 100;
+            e->bolaPerfurante = false;
+            e->tipoPowerupAtivo = 0;
+
             e->jogador.pos.x = e->telaLargura / 2 - (e->jogador.largura / 2);
             e->jogador.pos.y = e->telaAltura - 60;
             e->bola.pos.x = e->telaLargura / 2;
@@ -491,6 +568,11 @@ void verificarColisoes(EstadoJogo* e) {
 
     if (CheckCollisionCircleRec(bolaCentro, bolaRaio, jogadorRect)) {
         if (e->bola.vel.dy > 0) {
+            float centroJogador = e->jogador.pos.x + e->jogador.largura / 2.0f;
+            float diferenca = e->bola.pos.x - centroJogador;
+            float normalizado = diferenca / (e->jogador.largura / 2.0f);
+            
+            e->bola.vel.dx = normalizado * 6.0f; 
             e->bola.vel.dy *= -1;
             e->bola.pos.y = e->jogador.pos.y - bolaRaio;
         }
@@ -504,10 +586,19 @@ void verificarColisoes(EstadoJogo* e) {
 
         if (blocoAtual->ativo) {
             if (CheckCollisionCircleRec(bolaCentro, bolaRaio, blocoAtual->rect)) {
-                e->bola.vel.dy *= -1;
+                
+                spawnarParticulas(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y + blocoAtual->rect.height/2, blocoAtual->cor);
+                spawnarPowerUp(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y);
+
+                if (!e->bolaPerfurante) {
+                    e->bola.vel.dy *= -1;
+                }
+                
                 e->pontuacao += 10;
                 blocoAtual->hp--;
                 
+                if (e->bolaPerfurante) blocoAtual->hp = 0;
+
                 if (blocoAtual->hp == 2) {
                     blocoAtual->cor = (Color){  30,  60, 180, 255 }; 
                 } else if (blocoAtual->hp == 1) {
@@ -526,7 +617,7 @@ void verificarColisoes(EstadoJogo* e) {
                     e->blocosAtivos--;
                 }
                 
-                return; 
+                if (!e->bolaPerfurante) return;
             }
         }
         
@@ -549,8 +640,30 @@ void desenharTelaJogo(EstadoJogo* e) {
         blocoAtual = blocoAtual->proximo;
     }
 
-    DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, BLACK);
-    DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, e->bola.cor);
+    if (e->powerupDrop.ativo) {
+        Color pColor = WHITE;
+        if (e->powerupDrop.tipo == 1) pColor = GREEN;
+        else if (e->powerupDrop.tipo == 2) pColor = RED;
+        else pColor = DARKGRAY;
+        
+        DrawCircleV(e->powerupDrop.pos, 10, pColor);
+        DrawText(e->powerupDrop.tipo == 3 ? "A" : (e->powerupDrop.tipo == 2 ? "+" : "W"), 
+                 e->powerupDrop.pos.x - 5, e->powerupDrop.pos.y - 10, 20, WHITE);
+    }
+
+    for (int i = 0; i < MAX_PARTICULAS; i++) {
+        if (e->particulas[i].ativa) {
+            DrawRectangle(e->particulas[i].pos.x, e->particulas[i].pos.y, 4, 4, Fade(e->particulas[i].cor, e->particulas[i].vida));
+        }
+    }
+
+    Color corPlayer = BLACK;
+    if (e->bolaPerfurante) corPlayer = DARKGRAY;
+    if (e->tipoPowerupAtivo == 1) corPlayer = DARKGREEN;
+
+    DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, corPlayer);
+    
+    DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, e->bolaPerfurante ? DARKGRAY : e->bola.cor);
 
     int alturaAgua = e->telaAltura - (int)e->alturaMare;
     
@@ -694,7 +807,9 @@ void salvarTopScores(EstadoJogo* e) {
     if (f == NULL) {
         return;
     }
+
     fwrite(&(e->numPerfis), sizeof(int), 1, f);
     fwrite(e->perfis, sizeof(Perfil), e->numPerfis, f);
+    
     fclose(f);
 }

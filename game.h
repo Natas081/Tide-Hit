@@ -4,9 +4,9 @@
 #include "raylib.h" 
 
 #define MAX_PERFIS 10
-
 #define BLOCO_LINHAS 5
 #define BLOCO_COLUNAS 10
+#define MAX_PARTICULAS 200
 
 #define TELA_MENU_PRINCIPAL 0
 #define TELA_JOGO 1
@@ -17,13 +17,13 @@
 #define TELA_PAUSE 6
 
 typedef struct {
-    int x;
-    int y;
+    float x;
+    float y;
 } Posicao;
 
 typedef struct {
-    int dx;
-    int dy;
+    float dx;
+    float dy;
 } Velocidade;
 
 typedef struct {
@@ -52,6 +52,20 @@ typedef struct Bloco {
     struct Bloco *proximo;
 } Bloco;
 
+typedef struct {
+    Vector2 pos;
+    Vector2 vel;
+    Color cor;
+    float vida;
+    bool ativa;
+} Particula;
+
+typedef struct {
+    Vector2 pos;
+    bool ativo;
+    int tipo; 
+} PowerUp;
+
 typedef struct EstadoJogo {
     int telaLargura;
     int telaAltura;
@@ -70,6 +84,7 @@ typedef struct EstadoJogo {
     int blocosParaRespawnar;
     float timerAceleracao;
     float timerRespawn;
+
     float alturaMare;
 
     Perfil perfis[MAX_PERFIS];
@@ -80,6 +95,13 @@ typedef struct EstadoJogo {
     bool mostrarDicaControle;
     float timerDicaControle;
     int cursorPause;
+
+    Particula particulas[MAX_PARTICULAS];
+    PowerUp powerupDrop;
+    int tipoPowerupAtivo; 
+    float timerPowerup;
+    bool bolaPerfurante;
+
 } EstadoJogo;
 
 EstadoJogo* criarEstadoInicial(int largura, int altura);
