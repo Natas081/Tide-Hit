@@ -3,10 +3,17 @@
 #include "raylib.h"
 #include "game.h"
 #include <stdio.h> 
+#include <math.h> 
 
 #define SCORE_FILE "scores.dat"
 
 void desenharTelaJogo(EstadoJogo* e);
+
+void desenharFundoPraia(int largura, int altura) {
+    Color areiaSeca  = (Color){ 245, 235, 215, 255 }; 
+    Color areiaUmida = (Color){ 225, 200, 160, 255 }; 
+    DrawRectangleGradientV(0, 0, largura, altura, areiaSeca, areiaUmida);
+}
 
 void ordenarPerfis(EstadoJogo* e) {
     for (int i = 0; i < e->numPerfis - 1; i++) {
@@ -39,9 +46,9 @@ void respawnarBlocoAleatorio(EstadoJogo* e) {
     int offsetHorizontal = (e->telaLargura - (BLOCO_COLUNAS * (larguraBloco + espacoHorizontal)) + espacoHorizontal) / 2;
     int offsetVertical = 50;
 
-    Color corHP3 = (Color){ 140, 140, 140, 255 };
-    Color corHP2 = (Color){  30,  30, 180, 255 };
-    Color corHP1 = (Color){ 190, 160, 220, 255 };
+    Color corHP3 = (Color){ 100, 100, 100, 255 }; 
+    Color corHP2 = (Color){  30,  60, 180, 255 }; 
+    Color corHP1 = (Color){ 200, 100, 100, 255 }; 
 
     int tentativas = 0;
     while (tentativas < 50) { 
@@ -103,9 +110,9 @@ void carregarNivel(EstadoJogo* e, int nivel) {
     int offsetHorizontal = (e->telaLargura - (BLOCO_COLUNAS * (larguraBloco + espacoHorizontal)) + espacoHorizontal) / 2;
     int offsetVertical = 50;
     
-    Color corHP3 = (Color){ 140, 140, 140, 255 };
-    Color corHP2 = (Color){  30,  30, 180, 255 };
-    Color corHP1 = (Color){ 190, 160, 220, 255 };
+    Color corHP3 = (Color){ 100, 100, 100, 255 }; 
+    Color corHP2 = (Color){  30,  60, 180, 255 }; 
+    Color corHP1 = (Color){ 200, 100, 100, 255 };
 
     for (int i = 0; i < BLOCO_LINHAS; i++) {
         for (int j = 0; j < BLOCO_COLUNAS; j++) {
@@ -152,23 +159,12 @@ void atualizarCorBola(EstadoJogo* e, float tempo)
         fase = 7;  
 
     Color coresArcoIris[7] = {
-        RED,
-        ORANGE,
-        YELLOW,
-        GREEN,
-        BLUE,
-        DARKBLUE,
-        VIOLET
+        RED, ORANGE, YELLOW, GREEN, BLUE, DARKBLUE, VIOLET
     };
 
-    if (fase < 7)
-    {
-
+    if (fase < 7) {
         e->bola.cor = coresArcoIris[fase];
-    }
-    else
-    {
-
+    } else {
         e->bola.cor = gerarCorRGB(tempo);
     }
 }
@@ -185,11 +181,9 @@ void initGame(EstadoJogo* e) {
     e->bola.pos.x = e->telaLargura / 2;
     e->bola.pos.y = e->telaAltura - 70;
     
-    if (rand() % 2 == 0) {
-        e->bola.vel.dx = -4;
-    } else {
-        e->bola.vel.dx = 4;
-    }
+    if (rand() % 2 == 0) e->bola.vel.dx = -4;
+    else e->bola.vel.dx = 4;
+    
     e->bola.vel.dy = -4;
     
     e->mostrarDicaControle = true;
@@ -200,6 +194,8 @@ void initGame(EstadoJogo* e) {
     e->timerRespawn = 0.2f;
     e->blocosParaRespawnar = 0;
     
+    e->alturaMare = e->telaAltura + 100.0f;
+
     carregarNivel(e, 1);
 }
 
@@ -225,9 +221,10 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     e->telaAtual = TELA_MENU_PRINCIPAL;
     e->numPerfis = 0;
     e->perfilSelecionado = -1;
-    e->bola.cor = WHITE;
+    e->bola.cor = DARKBLUE;
 
-    
+    e->alturaMare = altura + 100.0f;
+
     carregarTopScores(e);
     initGame(e);
 
@@ -396,12 +393,16 @@ void atualizarJogador(EstadoJogo* e) {
 }
 
 void atualizarBola(EstadoJogo* e) {
-
     atualizarCorBola(e, GetTime());
-    float tempo = GetTime();
-    float nivelBase = e->telaAltura - 150.0f; 
-    float amplitude = 60.0f;                 
-    e->alturaMare = nivelBase + (sin(tempo * 1.5f) * amplitude);
+
+    if (e->pontuacao >= 500) {
+        float tempo = GetTime();
+        float nivelBase = e->telaAltura - 200.0f; 
+        float amplitude = 90.0f;                  
+        e->alturaMare = nivelBase + (sin(tempo * 1.5f) * amplitude);
+    } else {
+        e->alturaMare = e->telaAltura + 100.0f;
+    }
 
     float fatorVelocidade = 1.0f;
     if (e->bola.pos.y > e->alturaMare) {
@@ -423,11 +424,11 @@ void atualizarBola(EstadoJogo* e) {
         e->bola.pos.x = e->telaLargura - 10;
         e->bola.vel.dx *= -1;
     }
+
     if (e->bola.pos.y >= e->telaAltura) {
         e->vidas--;
         
         if (e->vidas <= 0) {
-
             if (e->perfilSelecionado != -1) {
                 if (e->pontuacao > e->perfis[e->perfilSelecionado].recorde) {
                     e->perfis[e->perfilSelecionado].recorde = e->pontuacao;
@@ -443,17 +444,16 @@ void atualizarBola(EstadoJogo* e) {
             e->bola.pos.x = e->telaLargura / 2;
             e->bola.pos.y = e->telaAltura - 70;
             
-            if (rand() % 2 == 0) {
-                e->bola.vel.dx = -4;
-            } else {
-                e->bola.vel.dx = 4;
-            }
+            if (rand() % 2 == 0) e->bola.vel.dx = -4;
+            else e->bola.vel.dx = 4;
+            
             e->bola.vel.dy = -4;
             
             if (e->vidas == 1) e->timerAceleracao = 40.0f;
             else e->timerAceleracao = 60.0f;
         }
     }
+
     e->timerAceleracao -= GetFrameTime();
     if (e->timerAceleracao <= 0.0f) {
         if (e->bola.vel.dx > 0) e->bola.vel.dx += 1;
@@ -509,9 +509,9 @@ void verificarColisoes(EstadoJogo* e) {
                 blocoAtual->hp--;
                 
                 if (blocoAtual->hp == 2) {
-                    blocoAtual->cor = (Color){  30,  30, 180, 255 }; 
+                    blocoAtual->cor = (Color){  30,  60, 180, 255 }; 
                 } else if (blocoAtual->hp == 1) {
-                    blocoAtual->cor = (Color){ 190, 160, 220, 255 };
+                    blocoAtual->cor = (Color){ 200, 100, 100, 255 };
                 }
 
                 if (blocoAtual->hp <= 0) {
@@ -538,26 +538,26 @@ void verificarColisoes(EstadoJogo* e) {
 }
 
 void desenharTelaJogo(EstadoJogo* e) {
+    desenharFundoPraia(e->telaLargura, e->telaAltura);
 
     Bloco *blocoAtual = e->listaDeBlocos;
     while (blocoAtual != NULL) {
         if (blocoAtual->ativo) {
             DrawRectangleRec(blocoAtual->rect, blocoAtual->cor);
+            DrawRectangleLinesEx(blocoAtual->rect, 1, DARKGRAY); 
         }
         blocoAtual = blocoAtual->proximo;
     }
 
-    DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
+    DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, BLACK);
     DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, e->bola.cor);
+
     int alturaAgua = e->telaAltura - (int)e->alturaMare;
     
     if (alturaAgua > 0) {
-
-        DrawRectangle(0, (int)e->alturaMare, e->telaLargura, alturaAgua, Fade(BLUE, 0.4f));
-        
-        DrawRectangle(0, (int)e->alturaMare - 2, e->telaLargura, 4, Fade(WHITE, 0.5f));
+        DrawRectangle(0, (int)e->alturaMare, e->telaLargura, alturaAgua, Fade(SKYBLUE, 0.6f));
+        DrawRectangle(0, (int)e->alturaMare - 2, e->telaLargura, 5, Fade(WHITE, 0.6f));
     }
-
 
     int recordeAtual = 0;
     char iniciaisJogador[4] = "???";
@@ -567,28 +567,29 @@ void desenharTelaJogo(EstadoJogo* e) {
         strcpy(iniciaisJogador, e->perfis[e->perfilSelecionado].iniciais);
     }
     
-
-    DrawText(TextFormat("RECORDE(%s): %d", iniciaisJogador, recordeAtual), 20, 10, 20, WHITE);
+    DrawText(TextFormat("RECORDE(%s): %d", iniciaisJogador, recordeAtual), 20, 10, 20, DARKBLUE);
     
     const char* textoPontos = TextFormat("PONTOS: %d", e->pontuacao);
-    DrawText(textoPontos, e->telaLargura / 2 - MeasureText(textoPontos, 20)/2, 10, 20, WHITE);
+    DrawText(textoPontos, e->telaLargura / 2 - MeasureText(textoPontos, 20)/2, 10, 20, DARKBLUE);
     
     const char* textoVidas = TextFormat("VIDAS: %d", e->vidas);
-    DrawText(textoVidas, e->telaLargura - MeasureText(textoVidas, 20) - 20, 10, 20, WHITE);
-
+    DrawText(textoVidas, e->telaLargura - MeasureText(textoVidas, 20) - 20, 10, 20, DARKBLUE);
 
     if (e->mostrarDicaControle) {
         const char* dicaControle = "Use 'a' e 'd' para mover";
         int dicaWidth = MeasureText(dicaControle, 20);
-        DrawText(dicaControle, e->telaLargura / 2 - dicaWidth / 2, e->telaAltura / 2, 20, GRAY);
+        DrawText(dicaControle, e->telaLargura / 2 - dicaWidth / 2, e->telaAltura / 2, 20, DARKGRAY);
     }
 }
+
 void desenharTudo(EstadoJogo* e, Texture2D logo) { 
     const char* escText = "Pressione ESC para fechar";
     int escTextWidth = MeasureText(escText, 20);
     DrawText(escText, e->telaLargura - escTextWidth - 10, e->telaAltura - 30, 20, DARKGRAY);
 
     if (e->telaAtual == TELA_MENU_PRINCIPAL) {
+        DrawRectangleGradientV(0, 0, e->telaLargura, e->telaAltura, (Color){10, 30, 50, 255}, (Color){20, 60, 100, 255});
+
         int x_meio = e->telaLargura / 2;
         int y_meio = e->telaAltura / 2;
         int logoX = x_meio - logo.width / 2;
@@ -608,7 +609,7 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
     else if (e->telaAtual == TELA_PAUSE) {
         desenharTelaJogo(e);
         
-        DrawRectangle(0, 0, e->telaLargura, e->telaAltura, ColorAlpha(BLACK, 0.7f));
+        DrawRectangle(0, 0, e->telaLargura, e->telaAltura, ColorAlpha(BLACK, 0.4f)); 
         int x_meio = e->telaLargura / 2;
         int y_meio = e->telaAltura / 2;
         
@@ -617,6 +618,7 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
         DrawText(TextFormat("%s Voltar para o Menu", (e->cursorPause == 1) ? ">" : " "), x_meio - MeasureText("> Voltar para o Menu", 30)/2, y_meio + 40, 30, WHITE);
     }
     else if (e->telaAtual == TELA_TOP_SCORES) {
+        DrawRectangle(0, 0, e->telaLargura, e->telaAltura, (Color){20, 20, 40, 255});
         int x_meio = e->telaLargura / 2;
         int y_meio = e->telaAltura / 2;
         DrawText("TOP SCORES", x_meio - MeasureText("TOP SCORES", 40)/2, y_meio - 100, 40, YELLOW);
@@ -631,44 +633,39 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
         }
         DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, e->telaAltura - 80, 20, GRAY);
     }
-    else if (e->telaAtual == TELA_PERGUNTA_PERFIL) {
-        int x_meio = e->telaLargura / 2;
-        int y_meio = e->telaAltura / 2;
-        DrawText("Você já tem um perfil cadastrado?", x_meio - MeasureText("Você já tem um perfil cadastrado?", 30)/2, y_meio - 50, 30, WHITE);
-        DrawText(TextFormat("%s Sim (Carregar Perfil)", (e->cursorMenu == 0) ? ">" : " "), x_meio - MeasureText("> Sim (Carregar Perfil)", 20)/2, y_meio + 10, 20, WHITE);
-        DrawText(TextFormat("%s Não (Novo Perfil)", (e->cursorMenu == 1) ? ">" : " "), x_meio - MeasureText("> Não (Novo Perfil)", 20)/2, y_meio + 40, 20, WHITE);
-        DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + 100, 20, GRAY);
-    }
-    else if (e->telaAtual == TELA_REGISTRAR_PERFIL) {
-        int x_meio = e->telaLargura / 2;
-        int y_meio = e->telaAltura / 2;
-        DrawText("Digite suas 3 iniciais:", x_meio - MeasureText("Digite suas 3 iniciais:", 20)/2, y_meio - 50, 20, WHITE);
-        DrawText(TextFormat("%c %c %c", e->registroIniciais[0], e->registroIniciais[1], e->registroIniciais[2]), 
-                 x_meio - MeasureText("A B C", 40)/2, y_meio, 40, YELLOW);
-        if (e->registroCursor < 3) {
-            int x_cursor = x_meio - (MeasureText("A B C", 40)/2) + (e->registroCursor * 30) - 5;
-            DrawRectangle(x_cursor, y_meio + 45, 25, 5, YELLOW);
-        }
-        DrawText("Use BACKSPACE para apagar.", x_meio - MeasureText("Use BACKSPACE para apagar.", 20)/2, y_meio + 100, 20, GRAY);
-        DrawText("Aperte ENTER para confirmar (depois das 3)", x_meio - MeasureText("Aperte ENTER para confirmar (depois das 3)", 20)/2, y_meio + 130, 20, GRAY);
-        DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + 160, 20, GRAY);
-    }
-    else if (e->telaAtual == TELA_SELECIONAR_PERFIL) {
-        int x_meio = e->telaLargura / 2;
-        int y_meio = e->telaAltura / 2;
-        DrawText("SELECIONE SEU PERFIL", x_meio - MeasureText("SELECIONE SEU PERFIL", 40)/2, y_meio - 100, 40, YELLOW);
-        
-        char textoPerfil[32];
-        int numOpcoes = e->numPerfis;
-        
-        for (int i = 0; i < numOpcoes; i++) {
-            Color cor = (e->cursorMenu == i) ? YELLOW : WHITE;
-            sprintf(textoPerfil, "%s %s (Recorde: %d)", (e->cursorMenu == i) ? ">" : " ", e->perfis[i].iniciais, e->perfis[i].recorde);
-            DrawText(textoPerfil, x_meio - MeasureText(textoPerfil, 25)/2, y_meio - 30 + (i*35), 25, cor);
-        }
-        
-        DrawText("Pressione ENTER para selecionar", x_meio - MeasureText("Pressione ENTER para selecionar", 20)/2, y_meio + (numOpcoes * 35) + 30, 20, GRAY);
-        DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + (numOpcoes * 35) + 60, 20, GRAY);
+    else if (e->telaAtual == TELA_PERGUNTA_PERFIL || e->telaAtual == TELA_REGISTRAR_PERFIL || e->telaAtual == TELA_SELECIONAR_PERFIL) {
+         DrawRectangle(0, 0, e->telaLargura, e->telaAltura, (Color){30, 30, 30, 255});
+         
+         int x_meio = e->telaLargura / 2;
+         int y_meio = e->telaAltura / 2;
+         
+         if (e->telaAtual == TELA_PERGUNTA_PERFIL) {
+            DrawText("Você já tem um perfil cadastrado?", x_meio - MeasureText("Você já tem um perfil cadastrado?", 30)/2, y_meio - 50, 30, WHITE);
+            DrawText(TextFormat("%s Sim (Carregar Perfil)", (e->cursorMenu == 0) ? ">" : " "), x_meio - MeasureText("> Sim (Carregar Perfil)", 20)/2, y_meio + 10, 20, WHITE);
+            DrawText(TextFormat("%s Não (Novo Perfil)", (e->cursorMenu == 1) ? ">" : " "), x_meio - MeasureText("> Não (Novo Perfil)", 20)/2, y_meio + 40, 20, WHITE);
+            DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + 100, 20, GRAY);
+         }
+         else if (e->telaAtual == TELA_REGISTRAR_PERFIL) {
+            DrawText("Digite suas 3 iniciais:", x_meio - MeasureText("Digite suas 3 iniciais:", 20)/2, y_meio - 50, 20, WHITE);
+            DrawText(TextFormat("%c %c %c", e->registroIniciais[0], e->registroIniciais[1], e->registroIniciais[2]), 
+                     x_meio - MeasureText("A B C", 40)/2, y_meio, 40, YELLOW);
+            if (e->registroCursor < 3) {
+                int x_cursor = x_meio - (MeasureText("A B C", 40)/2) + (e->registroCursor * 30) - 5;
+                DrawRectangle(x_cursor, y_meio + 45, 25, 5, YELLOW);
+            }
+            DrawText("Use BACKSPACE para apagar.", x_meio - MeasureText("Use BACKSPACE para apagar.", 20)/2, y_meio + 100, 20, GRAY);
+            DrawText("Aperte ENTER para confirmar (depois das 3)", x_meio - MeasureText("Aperte ENTER para confirmar (depois das 3)", 20)/2, y_meio + 130, 20, GRAY);
+         }
+         else if (e->telaAtual == TELA_SELECIONAR_PERFIL) {
+            DrawText("SELECIONE SEU PERFIL", x_meio - MeasureText("SELECIONE SEU PERFIL", 40)/2, y_meio - 100, 40, YELLOW);
+            char textoPerfil[32];
+            for (int i = 0; i < e->numPerfis; i++) {
+                Color cor = (e->cursorMenu == i) ? YELLOW : WHITE;
+                sprintf(textoPerfil, "%s %s (Recorde: %d)", (e->cursorMenu == i) ? ">" : " ", e->perfis[i].iniciais, e->perfis[i].recorde);
+                DrawText(textoPerfil, x_meio - MeasureText(textoPerfil, 25)/2, y_meio - 30 + (i*35), 25, cor);
+            }
+            DrawText("Pressione ENTER para selecionar", x_meio - MeasureText("Pressione ENTER para selecionar", 20)/2, y_meio + (e->numPerfis * 35) + 30, 20, GRAY);
+         }
     }
 }
 
@@ -697,9 +694,7 @@ void salvarTopScores(EstadoJogo* e) {
     if (f == NULL) {
         return;
     }
-
     fwrite(&(e->numPerfis), sizeof(int), 1, f);
     fwrite(e->perfis, sizeof(Perfil), e->numPerfis, f);
-    
     fclose(f);
 }
