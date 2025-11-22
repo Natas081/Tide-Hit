@@ -396,10 +396,20 @@ void atualizarJogador(EstadoJogo* e) {
 }
 
 void atualizarBola(EstadoJogo* e) {
-    atualizarCorBola(e, GetTime());
 
-    e->bola.pos.x += e->bola.vel.dx;
-    e->bola.pos.y += e->bola.vel.dy;
+    atualizarCorBola(e, GetTime());
+    float tempo = GetTime();
+    float nivelBase = e->telaAltura - 150.0f; 
+    float amplitude = 60.0f;                 
+    e->alturaMare = nivelBase + (sin(tempo * 1.5f) * amplitude);
+
+    float fatorVelocidade = 1.0f;
+    if (e->bola.pos.y > e->alturaMare) {
+        fatorVelocidade = 0.65f; 
+    }
+
+    e->bola.pos.x += e->bola.vel.dx * fatorVelocidade;
+    e->bola.pos.y += e->bola.vel.dy * fatorVelocidade;
 
     if (e->bola.pos.y <= 10) {
         e->bola.pos.y = 10;
@@ -413,11 +423,11 @@ void atualizarBola(EstadoJogo* e) {
         e->bola.pos.x = e->telaLargura - 10;
         e->bola.vel.dx *= -1;
     }
-
     if (e->bola.pos.y >= e->telaAltura) {
         e->vidas--;
         
         if (e->vidas <= 0) {
+
             if (e->perfilSelecionado != -1) {
                 if (e->pontuacao > e->perfis[e->perfilSelecionado].recorde) {
                     e->perfis[e->perfilSelecionado].recorde = e->pontuacao;
@@ -444,7 +454,6 @@ void atualizarBola(EstadoJogo* e) {
             else e->timerAceleracao = 60.0f;
         }
     }
-
     e->timerAceleracao -= GetFrameTime();
     if (e->timerAceleracao <= 0.0f) {
         if (e->bola.vel.dx > 0) e->bola.vel.dx += 1;
@@ -529,21 +538,6 @@ void verificarColisoes(EstadoJogo* e) {
 }
 
 void desenharTelaJogo(EstadoJogo* e) {
-    int recordeAtual = 0;
-    char iniciaisJogador[4] = "???";
-    if (e->perfilSelecionado != -1 && e->perfilSelecionado < e->numPerfis) {
-        recordeAtual = e->perfis[e->perfilSelecionado].recorde;
-        strcpy(iniciaisJogador, e->perfis[e->perfilSelecionado].iniciais);
-    }
-    
-    DrawText(TextFormat("RECORDE(%s): %d", iniciaisJogador, recordeAtual), 20, 10, 20, WHITE);
-    DrawText(TextFormat("PONTOS: %d", e->pontuacao), e->telaLargura / 2 - MeasureText(TextFormat("PONTOS: %d", e->pontuacao), 20)/2, 10, 20, WHITE);
-    DrawText(TextFormat("VIDAS: %d", e->vidas), e->telaLargura - MeasureText(TextFormat("VIDAS: %d", e->vidas), 20) - 20, 10, 20, WHITE);
-
-    DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
-
-    DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, e->bola.cor);
-
 
     Bloco *blocoAtual = e->listaDeBlocos;
     while (blocoAtual != NULL) {
@@ -553,13 +547,42 @@ void desenharTelaJogo(EstadoJogo* e) {
         blocoAtual = blocoAtual->proximo;
     }
 
+    DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, WHITE);
+    DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, e->bola.cor);
+    int alturaAgua = e->telaAltura - (int)e->alturaMare;
+    
+    if (alturaAgua > 0) {
+
+        DrawRectangle(0, (int)e->alturaMare, e->telaLargura, alturaAgua, Fade(BLUE, 0.4f));
+        
+        DrawRectangle(0, (int)e->alturaMare - 2, e->telaLargura, 4, Fade(WHITE, 0.5f));
+    }
+
+
+    int recordeAtual = 0;
+    char iniciaisJogador[4] = "???";
+    
+    if (e->perfilSelecionado != -1 && e->perfilSelecionado < e->numPerfis) {
+        recordeAtual = e->perfis[e->perfilSelecionado].recorde;
+        strcpy(iniciaisJogador, e->perfis[e->perfilSelecionado].iniciais);
+    }
+    
+
+    DrawText(TextFormat("RECORDE(%s): %d", iniciaisJogador, recordeAtual), 20, 10, 20, WHITE);
+    
+    const char* textoPontos = TextFormat("PONTOS: %d", e->pontuacao);
+    DrawText(textoPontos, e->telaLargura / 2 - MeasureText(textoPontos, 20)/2, 10, 20, WHITE);
+    
+    const char* textoVidas = TextFormat("VIDAS: %d", e->vidas);
+    DrawText(textoVidas, e->telaLargura - MeasureText(textoVidas, 20) - 20, 10, 20, WHITE);
+
+
     if (e->mostrarDicaControle) {
         const char* dicaControle = "Use 'a' e 'd' para mover";
         int dicaWidth = MeasureText(dicaControle, 20);
         DrawText(dicaControle, e->telaLargura / 2 - dicaWidth / 2, e->telaAltura / 2, 20, GRAY);
     }
 }
-
 void desenharTudo(EstadoJogo* e, Texture2D logo) { 
     const char* escText = "Pressione ESC para fechar";
     int escTextWidth = MeasureText(escText, 20);

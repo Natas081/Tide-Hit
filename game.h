@@ -70,6 +70,7 @@ typedef struct EstadoJogo {
     int blocosParaRespawnar;
     float timerAceleracao;
     float timerRespawn;
+    float alturaMare;
 
     Perfil perfis[MAX_PERFIS];
     int numPerfis;
