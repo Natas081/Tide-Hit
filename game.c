@@ -200,10 +200,14 @@ void atualizarCorBola(EstadoJogo* e, float tempo)
         RED, ORANGE, YELLOW, GREEN, BLUE, DARKBLUE, VIOLET
     };
 
-    if (fase < 7) {
-        e->bola.cor = coresArcoIris[fase];
-    } else {
-        e->bola.cor = gerarCorRGB(tempo);
+    for(int i=0; i<MAX_BOLAS; i++) {
+        if(e->bolas[i].ativa) {
+            if (fase < 7) {
+                e->bolas[i].cor = coresArcoIris[fase];
+            } else {
+                e->bolas[i].cor = gerarCorRGB(tempo);
+            }
+        }
     }
 }
 
@@ -213,17 +217,23 @@ void initGame(EstadoJogo* e) {
     e->pontuacao = 0;
     e->vidas = 3;
     e->nivel = 1;
+    e->nivelVelocidade = 0;
     
     e->jogador.largura = 100;
     e->jogador.pos.x = e->telaLargura / 2 - (e->jogador.largura / 2);
     e->jogador.pos.y = e->telaAltura - 60;
-    e->bola.pos.x = e->telaLargura / 2;
-    e->bola.pos.y = e->telaAltura - 70;
     
-    if (rand() % 2 == 0) e->bola.vel.dx = -4;
-    else e->bola.vel.dx = 4;
+    for(int i=0; i<MAX_BOLAS; i++) e->bolas[i].ativa = false;
     
-    e->bola.vel.dy = -4;
+    e->bolas[0].ativa = true;
+    e->bolas[0].pos.x = e->telaLargura / 2;
+    e->bolas[0].pos.y = e->telaAltura - 70;
+    e->bolas[0].cor = DARKBLUE;
+    
+    if (rand() % 2 == 0) e->bolas[0].vel.dx = -4;
+    else e->bolas[0].vel.dx = 4;
+    
+    e->bolas[0].vel.dy = -4;
     
     e->mostrarDicaControle = true;
     e->timerDicaControle = 3.0f;
@@ -239,7 +249,9 @@ void initGame(EstadoJogo* e) {
     e->powerupDrop.ativo = false;
     e->tipoPowerupAtivo = 0;
     e->timerPowerup = 0;
+    
     e->bolaPerfurante = false;
+    e->timerAncora = 0.0f;
 
     carregarNivel(e, 1);
 }
@@ -253,7 +265,6 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     e->telaAltura = altura;
     e->jogador.largura = 100;
     e->jogador.simbolo = "=======";
-    e->bola.simbolo = 'O';
     e->deveSair = 0;
     e->cursorMenu = 0;
     e->listaDeBlocos = NULL;
@@ -266,7 +277,8 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     e->telaAtual = TELA_MENU_PRINCIPAL;
     e->numPerfis = 0;
     e->perfilSelecionado = -1;
-    e->bola.cor = DARKBLUE;
+    
+    for(int i=0; i<MAX_BOLAS; i++) e->bolas[i].ativa = false;
 
     e->alturaMare = altura + 100.0f;
 
@@ -449,6 +461,13 @@ void atualizarBola(EstadoJogo* e) {
         }
     }
 
+    if (e->bolaPerfurante) {
+        e->timerAncora -= GetFrameTime();
+        if (e->timerAncora <= 0.0f) {
+            e->bolaPerfurante = false;
+        }
+    }
+
     if (e->powerupDrop.ativo) {
         e->powerupDrop.pos.y += 2.0f;
         if (CheckCollisionRecs((Rectangle){e->powerupDrop.pos.x, e->powerupDrop.pos.y, 20, 20},
@@ -460,9 +479,20 @@ void atualizarBola(EstadoJogo* e) {
                 e->jogador.largura = 160;
                 e->timerPowerup = 10.0f; 
             } else if (e->powerupDrop.tipo == 2) {
-                e->vidas++;
+                for(int k=0; k<MAX_BOLAS; k++) {
+                    if(!e->bolas[k].ativa) {
+                        e->bolas[k] = e->bolas[0];
+                        e->bolas[k].pos.x = e->jogador.pos.x + e->jogador.largura/2;
+                        e->bolas[k].pos.y = e->jogador.pos.y - 20;
+                        e->bolas[k].vel.dy = -abs(e->bolas[0].vel.dy);
+                        e->bolas[k].vel.dx = (rand()%2 == 0) ? 4 : -4;
+                        e->bolas[k].ativa = true;
+                        break;
+                    }
+                }
             } else if (e->powerupDrop.tipo == 3) {
                 e->bolaPerfurante = true; 
+                e->timerAncora = 6.0f;
             }
         }
         if (e->powerupDrop.pos.y > e->telaAltura) e->powerupDrop.ativo = false;
@@ -477,28 +507,52 @@ void atualizarBola(EstadoJogo* e) {
         e->alturaMare = e->telaAltura + 100.0f;
     }
 
-    float fatorVelocidade = 1.0f;
-    if (e->bola.pos.y > e->alturaMare) {
-        fatorVelocidade = 0.65f; 
+    int nivelAtualVelocidade = e->pontuacao / 350;
+    if (nivelAtualVelocidade > e->nivelVelocidade) {
+        e->nivelVelocidade = nivelAtualVelocidade;
+        for(int i=0; i<MAX_BOLAS; i++) {
+            if(e->bolas[i].ativa) {
+                e->bolas[i].vel.dx *= 1.15f; 
+                e->bolas[i].vel.dy *= 1.15f;
+            }
+        }
     }
 
-    e->bola.pos.x += e->bola.vel.dx * fatorVelocidade;
-    e->bola.pos.y += e->bola.vel.dy * fatorVelocidade;
+    for(int i=0; i<MAX_BOLAS; i++) {
+        if (!e->bolas[i].ativa) continue;
 
-    if (e->bola.pos.y <= 10) {
-        e->bola.pos.y = 10;
-        e->bola.vel.dy *= -1;
-    }
-    if (e->bola.pos.x <= 10) {
-        e->bola.pos.x = 10;
-        e->bola.vel.dx *= -1;
-    }
-    if (e->bola.pos.x >= e->telaLargura - 10) {
-        e->bola.pos.x = e->telaLargura - 10;
-        e->bola.vel.dx *= -1;
+        float fatorVelocidade = 1.0f;
+        if (e->bolas[i].pos.y > e->alturaMare) {
+            fatorVelocidade = 0.65f; 
+        }
+
+        e->bolas[i].pos.x += e->bolas[i].vel.dx * fatorVelocidade;
+        e->bolas[i].pos.y += e->bolas[i].vel.dy * fatorVelocidade;
+
+        if (e->bolas[i].pos.y <= 10) {
+            e->bolas[i].pos.y = 10;
+            e->bolas[i].vel.dy *= -1;
+        }
+        if (e->bolas[i].pos.x <= 10) {
+            e->bolas[i].pos.x = 10;
+            e->bolas[i].vel.dx *= -1;
+        }
+        if (e->bolas[i].pos.x >= e->telaLargura - 10) {
+            e->bolas[i].pos.x = e->telaLargura - 10;
+            e->bolas[i].vel.dx *= -1;
+        }
+
+        if (e->bolas[i].pos.y >= e->telaAltura) {
+            e->bolas[i].ativa = false;
+        }
     }
 
-    if (e->bola.pos.y >= e->telaAltura) {
+    int bolasAtivas = 0;
+    for(int i=0; i<MAX_BOLAS; i++) {
+        if(e->bolas[i].ativa) bolasAtivas++;
+    }
+
+    if (bolasAtivas == 0) {
         e->vidas--;
         
         if (e->vidas <= 0) {
@@ -515,16 +569,24 @@ void atualizarBola(EstadoJogo* e) {
             e->jogador.largura = 100;
             e->bolaPerfurante = false;
             e->tipoPowerupAtivo = 0;
+            e->nivelVelocidade = e->pontuacao / 350; 
 
             e->jogador.pos.x = e->telaLargura / 2 - (e->jogador.largura / 2);
             e->jogador.pos.y = e->telaAltura - 60;
-            e->bola.pos.x = e->telaLargura / 2;
-            e->bola.pos.y = e->telaAltura - 70;
             
-            if (rand() % 2 == 0) e->bola.vel.dx = -4;
-            else e->bola.vel.dx = 4;
+            for(int i=1; i<MAX_BOLAS; i++) e->bolas[i].ativa = false;
             
-            e->bola.vel.dy = -4;
+            e->bolas[0].ativa = true;
+            e->bolas[0].pos.x = e->telaLargura / 2;
+            e->bolas[0].pos.y = e->telaAltura - 70;
+            
+            if (rand() % 2 == 0) e->bolas[0].vel.dx = -4;
+            else e->bolas[0].vel.dx = 4;
+            e->bolas[0].vel.dy = -4;
+
+            float multiplicador = 1.0f + (e->nivelVelocidade * 0.15f);
+            e->bolas[0].vel.dx *= multiplicador;
+            e->bolas[0].vel.dy *= multiplicador;
             
             if (e->vidas == 1) e->timerAceleracao = 40.0f;
             else e->timerAceleracao = 60.0f;
@@ -533,12 +595,15 @@ void atualizarBola(EstadoJogo* e) {
 
     e->timerAceleracao -= GetFrameTime();
     if (e->timerAceleracao <= 0.0f) {
-        if (e->bola.vel.dx > 0) e->bola.vel.dx += 1;
-        else e->bola.vel.dx -= 1;
+        for(int i=0; i<MAX_BOLAS; i++) {
+            if(e->bolas[i].ativa) {
+                if (e->bolas[i].vel.dx > 0) e->bolas[i].vel.dx += 1;
+                else e->bolas[i].vel.dx -= 1;
 
-        if (e->bola.vel.dy > 0) e->bola.vel.dy += 1;
-        else e->bola.vel.dy -= 1;
-
+                if (e->bolas[i].vel.dy > 0) e->bolas[i].vel.dy += 1;
+                else e->bolas[i].vel.dy -= 1;
+            }
+        }
         if (e->vidas == 1) e->timerAceleracao = 40.0f;
         else e->timerAceleracao = 60.0f;
     }
@@ -562,68 +627,80 @@ void atualizarBola(EstadoJogo* e) {
 }
 
 void verificarColisoes(EstadoJogo* e) {
-    Vector2 bolaCentro = { (float)e->bola.pos.x, (float)e->bola.pos.y };
-    float bolaRaio = 10.0f;
     Rectangle jogadorRect = { (float)e->jogador.pos.x, (float)e->jogador.pos.y, (float)e->jogador.largura, 20.0f };
 
-    if (CheckCollisionCircleRec(bolaCentro, bolaRaio, jogadorRect)) {
-        if (e->bola.vel.dy > 0) {
-            float centroJogador = e->jogador.pos.x + e->jogador.largura / 2.0f;
-            float diferenca = e->bola.pos.x - centroJogador;
-            float normalizado = diferenca / (e->jogador.largura / 2.0f);
-            
-            e->bola.vel.dx = normalizado * 6.0f; 
-            e->bola.vel.dy *= -1;
-            e->bola.pos.y = e->jogador.pos.y - bolaRaio;
-        }
-    }
-    
-    Bloco *blocoAtual = e->listaDeBlocos;
-    Bloco *blocoAnterior = NULL;
+    for(int i=0; i<MAX_BOLAS; i++) {
+        if(!e->bolas[i].ativa) continue;
 
-    while (blocoAtual != NULL) {
-        Bloco *proximoBloco = blocoAtual->proximo;
+        Vector2 bolaCentro = { (float)e->bolas[i].pos.x, (float)e->bolas[i].pos.y };
+        float bolaRaio = 10.0f;
 
-        if (blocoAtual->ativo) {
-            if (CheckCollisionCircleRec(bolaCentro, bolaRaio, blocoAtual->rect)) {
+        if (CheckCollisionCircleRec(bolaCentro, bolaRaio, jogadorRect)) {
+            if (e->bolas[i].vel.dy > 0) {
+                float centroJogador = e->jogador.pos.x + e->jogador.largura / 2.0f;
+                float diferenca = e->bolas[i].pos.x - centroJogador;
+                float normalizado = diferenca / (e->jogador.largura / 2.0f);
+                if (normalizado > 0.9f) normalizado = 0.9f;
+                if (normalizado < -0.9f) normalizado = -0.9f;
                 
-                spawnarParticulas(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y + blocoAtual->rect.height/2, blocoAtual->cor);
-                spawnarPowerUp(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y);
-
-                if (!e->bolaPerfurante) {
-                    e->bola.vel.dy *= -1;
-                }
+                float magnitudeAtual = sqrt(pow(e->bolas[i].vel.dx, 2) + pow(e->bolas[i].vel.dy, 2));
                 
-                e->pontuacao += 10;
-                blocoAtual->hp--;
-                
-                if (e->bolaPerfurante) blocoAtual->hp = 0;
+                e->bolas[i].vel.dx = normalizado * magnitudeAtual;
+                float restoVelocidade = pow(magnitudeAtual, 2) - pow(e->bolas[i].vel.dx, 2);
+                if (restoVelocidade < 0) restoVelocidade = 0;
 
-                if (blocoAtual->hp == 2) {
-                    blocoAtual->cor = (Color){  30,  60, 180, 255 }; 
-                } else if (blocoAtual->hp == 1) {
-                    blocoAtual->cor = (Color){ 200, 100, 100, 255 };
-                }
-
-                if (blocoAtual->hp <= 0) {
-                    if (blocoAnterior == NULL) {
-                        e->listaDeBlocos = proximoBloco;
-                    } else {
-                        blocoAnterior->proximo = proximoBloco;
-                    }
-                    
-                    free(blocoAtual);
-                    blocoAtual = NULL;
-                    e->blocosAtivos--;
-                }
-                
-                if (!e->bolaPerfurante) return;
+                e->bolas[i].vel.dy = -sqrt(restoVelocidade); 
+                e->bolas[i].pos.y = e->jogador.pos.y - bolaRaio - 2.0f;
             }
         }
         
-        if (blocoAtual != NULL) {
-            blocoAnterior = blocoAtual;
-            blocoAtual = proximoBloco;
+        Bloco *blocoAtual = e->listaDeBlocos;
+        Bloco *blocoAnterior = NULL;
+
+        while (blocoAtual != NULL) {
+            Bloco *proximoBloco = blocoAtual->proximo;
+
+            if (blocoAtual->ativo) {
+                if (CheckCollisionCircleRec(bolaCentro, bolaRaio, blocoAtual->rect)) {
+                    
+                    spawnarParticulas(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y + blocoAtual->rect.height/2, blocoAtual->cor);
+                    spawnarPowerUp(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y);
+
+                    if (!e->bolaPerfurante) {
+                        e->bolas[i].vel.dy *= -1;
+                    }
+                    
+                    e->pontuacao += 10;
+                    blocoAtual->hp--;
+                    
+                    if (e->bolaPerfurante) blocoAtual->hp = 0;
+
+                    if (blocoAtual->hp == 2) {
+                        blocoAtual->cor = (Color){  30,  60, 180, 255 }; 
+                    } else if (blocoAtual->hp == 1) {
+                        blocoAtual->cor = (Color){ 200, 100, 100, 255 };
+                    }
+
+                    if (blocoAtual->hp <= 0) {
+                        if (blocoAnterior == NULL) {
+                            e->listaDeBlocos = proximoBloco;
+                        } else {
+                            blocoAnterior->proximo = proximoBloco;
+                        }
+                        
+                        free(blocoAtual);
+                        blocoAtual = NULL;
+                        e->blocosAtivos--;
+                    }
+                    
+                    if (!e->bolaPerfurante) break; 
+                }
+            }
+            
+            if (blocoAtual != NULL) {
+                blocoAnterior = blocoAtual;
+                blocoAtual = proximoBloco;
+            }
         }
     }
 }
@@ -647,7 +724,7 @@ void desenharTelaJogo(EstadoJogo* e) {
         else pColor = DARKGRAY;
         
         DrawCircleV(e->powerupDrop.pos, 10, pColor);
-        DrawText(e->powerupDrop.tipo == 3 ? "A" : (e->powerupDrop.tipo == 2 ? "+" : "W"), 
+        DrawText(e->powerupDrop.tipo == 3 ? "A" : (e->powerupDrop.tipo == 2 ? "2x" : "W"), 
                  e->powerupDrop.pos.x - 5, e->powerupDrop.pos.y - 10, 20, WHITE);
     }
 
@@ -663,7 +740,11 @@ void desenharTelaJogo(EstadoJogo* e) {
 
     DrawRectangle(e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20, corPlayer);
     
-    DrawCircleV((Vector2){(float)e->bola.pos.x, (float)e->bola.pos.y}, 10, e->bolaPerfurante ? DARKGRAY : e->bola.cor);
+    for(int i=0; i<MAX_BOLAS; i++) {
+        if(e->bolas[i].ativa) {
+             DrawCircleV((Vector2){(float)e->bolas[i].pos.x, (float)e->bolas[i].pos.y}, 10, e->bolaPerfurante ? DARKGRAY : e->bolas[i].cor);
+        }
+    }
 
     int alturaAgua = e->telaAltura - (int)e->alturaMare;
     
@@ -687,6 +768,11 @@ void desenharTelaJogo(EstadoJogo* e) {
     
     const char* textoVidas = TextFormat("VIDAS: %d", e->vidas);
     DrawText(textoVidas, e->telaLargura - MeasureText(textoVidas, 20) - 20, 10, 20, DARKBLUE);
+    
+    if (e->bolaPerfurante) {
+        const char* textoAncora = TextFormat("ANCORA: %.1f", e->timerAncora);
+        DrawText(textoAncora, 20, 40, 20, DARKGRAY);
+    }
 
     if (e->mostrarDicaControle) {
         const char* dicaControle = "Use 'a' e 'd' para mover";

@@ -7,6 +7,7 @@
 #define BLOCO_LINHAS 5
 #define BLOCO_COLUNAS 10
 #define MAX_PARTICULAS 200
+#define MAX_BOLAS 6
 
 #define TELA_MENU_PRINCIPAL 0
 #define TELA_JOGO 1
@@ -37,6 +38,7 @@ typedef struct {
     Velocidade vel;
     char simbolo;
     Color cor;
+    bool ativa;
 } Bola;
 
 typedef struct {
@@ -77,7 +79,9 @@ typedef struct EstadoJogo {
     int telaAtual;
     int cursorMenu;
     Jogador jogador;
-    Bola bola;
+    
+    Bola bolas[MAX_BOLAS];
+
     Bloco *listaDeBlocos;
     
     int blocosAtivos;
@@ -100,7 +104,10 @@ typedef struct EstadoJogo {
     PowerUp powerupDrop;
     int tipoPowerupAtivo; 
     float timerPowerup;
+    
     bool bolaPerfurante;
+    float timerAncora;
+    int nivelVelocidade;
 
 } EstadoJogo;
 
