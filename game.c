@@ -721,11 +721,19 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
     }
     else if (e->telaAtual == TELA_EXIBIR_RECORDE) {
         DrawRectangleGradientV(0, 0, e->telaLargura, e->telaAltura, (Color){10, 30, 50, 255}, (Color){20, 60, 100, 255});
-        DrawText("TOP 3 RECORDES", e->telaLargura/2 - 100, 100, 30, YELLOW);
+        
+        const char* titulo = "TOP 3 RECORDES";
+        int larguraTitulo = MeasureText(titulo, 30);
+        DrawText(titulo, e->telaLargura/2 - larguraTitulo/2, 100, 30, YELLOW);
         for(int i=0; i<MAX_SCORES; i++) {
-            DrawText(TextFormat("%d. %s  .......  %d", i+1, e->topScores[i].nome, e->topScores[i].pontuacao), 
-                     e->telaLargura/2 - 100, 180 + (i*40), 20, WHITE);
+            const char* textoRecorde = TextFormat("%d. %s ....... %d", i+1, e->topScores[i].nome, e->topScores[i].pontuacao);
+            int larguraTextoRecorde = MeasureText(textoRecorde, 20);
+            DrawText(textoRecorde, e->telaLargura/2 - larguraTextoRecorde/2, 180 + (i*40), 20, WHITE);
         }
-        DrawText("Pressione ENTER para voltar", e->telaLargura/2 - 120, e->telaAltura - 100, 20, GRAY);
+        
+        const char* prompt = "Pressione ENTER para voltar";
+        int larguraPrompt = MeasureText(prompt, 20);
+        DrawText(prompt, e->telaLargura/2 - larguraPrompt/2, e->telaAltura - 100, 20, GRAY);
     }
+
 }
