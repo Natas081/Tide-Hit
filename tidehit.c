@@ -3,28 +3,22 @@
 #include <stdlib.h> 
 #include <time.h>
 
-#define TELA_LARGURA 800
-#define TELA_ALTURA 600
-
 int main(void)
 {
-    InitWindow(TELA_LARGURA, TELA_ALTURA, "Tide Hit!");
+    InitWindow(LARGURA_TELA, ALTURA_TELA, "Tide Hit!");
+    InitAudioDevice();
     srand(time(NULL));
 
-    Texture2D logo = LoadTexture("IMG_3363.jpeg");
+    Texture2D logo = LoadTexture("Imagem_menu.png"); 
 
-    EstadoJogo* estado = criarEstadoInicial(TELA_LARGURA, TELA_ALTURA);
+    EstadoJogo* estado = criarEstadoInicial(LARGURA_TELA, ALTURA_TELA);
     if (estado == NULL) return 1; 
 
     SetTargetFPS(60); 
     
     while (!WindowShouldClose() && estado->deveSair == 0) 
     {
-        atualizarJogador(estado);
-        if (estado->telaAtual == TELA_JOGO) {
-            atualizarBola(estado);
-            verificarColisoes(estado);
-        }
+        atualizarJogo(estado);
         
         BeginDrawing();
             ClearBackground(BLACK); 
@@ -35,6 +29,8 @@ int main(void)
     salvarTopScores(estado);
     UnloadTexture(logo); 
     liberarEstado(estado); 
+    
+    CloseAudioDevice();
     CloseWindow();       
 
     return 0;

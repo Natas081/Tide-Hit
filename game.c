@@ -9,6 +9,53 @@
 
 void desenharTelaJogo(EstadoJogo* e);
 
+void carregarTopScores(EstadoJogo* e) {
+    FILE *f = fopen(SCORE_FILE, "rb");
+    if (f) {
+        size_t lidos = fread(e->topScores, sizeof(RegistroScore), MAX_SCORES, f);
+        fclose(f);
+        if (lidos != MAX_SCORES) {
+             for(int i=0; i<MAX_SCORES; i++) {
+                strcpy(e->topScores[i].nome, "---");
+                e->topScores[i].pontuacao = 0;
+            }
+        }
+    } else {
+        for(int i=0; i<MAX_SCORES; i++) {
+            strcpy(e->topScores[i].nome, "---");
+            e->topScores[i].pontuacao = 0;
+        }
+    }
+}
+
+void salvarTopScores(EstadoJogo* e) {
+    FILE *f = fopen(SCORE_FILE, "wb");
+    if (f) {
+        fwrite(e->topScores, sizeof(RegistroScore), MAX_SCORES, f);
+        fclose(f);
+    }
+}
+
+void inserirNovoRecorde(EstadoJogo* e) {
+    int pos = -1;
+    for(int i=0; i<MAX_SCORES; i++) {
+        if(e->pontuacao > e->topScores[i].pontuacao) {
+            pos = i;
+            break;
+        }
+    }
+
+    if(pos != -1) {
+        for(int i = MAX_SCORES-1; i > pos; i--) {
+            e->topScores[i] = e->topScores[i-1];
+        }
+        e->entradaNome[3] = '\0';
+        strcpy(e->topScores[pos].nome, e->entradaNome);
+        e->topScores[pos].pontuacao = e->pontuacao;
+        salvarTopScores(e);
+    }
+}
+
 void spawnarParticulas(EstadoJogo* e, float x, float y, Color cor) {
     int count = 0;
     for (int i = 0; i < MAX_PARTICULAS; i++) {
@@ -51,18 +98,6 @@ void desenharFundoPraia(int largura, int altura) {
     Color areiaSeca  = (Color){ 245, 235, 215, 255 }; 
     Color areiaUmida = (Color){ 225, 200, 160, 255 }; 
     DrawRectangleGradientV(0, 0, largura, altura, areiaSeca, areiaUmida);
-}
-
-void ordenarPerfis(EstadoJogo* e) {
-    for (int i = 0; i < e->numPerfis - 1; i++) {
-        for (int j = 0; j < e->numPerfis - i - 1; j++) {
-            if (e->perfis[j].recorde < e->perfis[j + 1].recorde) {
-                Perfil temp = e->perfis[j];
-                e->perfis[j] = e->perfis[j + 1];
-                e->perfis[j + 1] = temp;
-            }
-        }
-    }
 }
 
 void limparBlocos(EstadoJogo* e) {
@@ -122,7 +157,6 @@ void respawnarBlocoAleatorio(EstadoJogo* e) {
             
             novoBloco->proximo = e->listaDeBlocos;
             e->listaDeBlocos = novoBloco;
-            
             e->blocosAtivos++;
             return; 
         }
@@ -182,6 +216,7 @@ void carregarNivel(EstadoJogo* e, int nivel) {
         }
     }
 }
+
 Color gerarCorRGB(float tempo) {
     unsigned char r = (sin(tempo * 2.0f) * 127 + 128);
     unsigned char g = (sin(tempo * 2.0f + 2.094f) * 127 + 128);
@@ -189,15 +224,12 @@ Color gerarCorRGB(float tempo) {
     return (Color){ r, g, b, 255 };
 }
 
-void atualizarCorBola(EstadoJogo* e, float tempo)
-{
+void atualizarCorBola(EstadoJogo* e, float tempo) {
     int fase = e->pontuacao / 100;      
+    if (fase > 7) fase = 7;  
 
-    if (fase > 7)
-        fase = 7;  
-
-    Color coresArcoIris[7] = {
-        RED, ORANGE, YELLOW, GREEN, BLUE, DARKBLUE, VIOLET
+    Color coresArcoIris[8] = {
+        RED, ORANGE, YELLOW, GREEN, BLUE, DARKBLUE, PURPLE, VIOLET
     };
 
     for(int i=0; i<MAX_BOLAS; i++) {
@@ -210,7 +242,6 @@ void atualizarCorBola(EstadoJogo* e, float tempo)
         }
     }
 }
-
 
 void initGame(EstadoJogo* e) {
     e->timerSpeed = 50;
@@ -257,7 +288,6 @@ void initGame(EstadoJogo* e) {
 }
 
 EstadoJogo* criarEstadoInicial(int largura, int altura) {
-
     EstadoJogo* e = malloc(sizeof(EstadoJogo));
     if (!e) return NULL;
 
@@ -266,7 +296,6 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     e->jogador.largura = 100;
     e->jogador.simbolo = "=======";
     e->deveSair = 0;
-    e->cursorMenu = 0;
     e->listaDeBlocos = NULL;
     
     e->blocosAtivos = 0;
@@ -274,9 +303,7 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     e->timerAceleracao = 0.0f;
     e->timerRespawn = 0.0f;
 
-    e->telaAtual = TELA_MENU_PRINCIPAL;
-    e->numPerfis = 0;
-    e->perfilSelecionado = -1;
+    e->telaAtual = TELA_MENU;
     
     for(int i=0; i<MAX_BOLAS; i++) e->bolas[i].ativa = false;
 
@@ -294,412 +321,297 @@ void liberarEstado(EstadoJogo* estado) {
     free(estado);
 }
 
-void atualizarJogador(EstadoJogo* e) {
-
-    if (e->telaAtual == TELA_MENU_PRINCIPAL) {
-        if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
-            e->cursorMenu++;
-            if (e->cursorMenu > 2) e->cursorMenu = 0;
-        }
-        if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
-            e->cursorMenu--;
-            if (e->cursorMenu < 0) e->cursorMenu = 2;
-        }
+void atualizarJogo(EstadoJogo* e) {
+    
+    if (e->telaAtual == TELA_MENU) {
         if (IsKeyPressed(KEY_ENTER)) {
-            if (e->cursorMenu == 0) {
-                e->telaAtual = TELA_PERGUNTA_PERFIL;
-                e->cursorMenu = 0;
-            } else if (e->cursorMenu == 1) {
-                e->telaAtual = TELA_TOP_SCORES;
-            } else if (e->cursorMenu == 2) {
-                e->deveSair = 1;
+            initGame(e);
+            e->telaAtual = TELA_JOGO;
+        }
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            e->deveSair = 1;
+        }
+    }
+    else if (e->telaAtual == TELA_NOME_RECORDE) {
+        int key = GetCharPressed();
+        while (key > 0) {
+            if (key >= 'a' && key <= 'z') key -= 32;
+
+            if ((key >= 32) && (key <= 125) && (e->indiceLetra < 3)) {
+                e->entradaNome[e->indiceLetra] = (char)key;
+                e->indiceLetra++;
+                e->entradaNome[e->indiceLetra] = '\0';
             }
+            key = GetCharPressed();
+        }
+        if (IsKeyPressed(KEY_BACKSPACE)) {
+            e->indiceLetra--;
+            if (e->indiceLetra < 0) e->indiceLetra = 0;
+            e->entradaNome[e->indiceLetra] = '\0';
+        }
+        if (IsKeyPressed(KEY_ENTER) && e->indiceLetra > 0) {
+            inserirNovoRecorde(e);
+            e->telaAtual = TELA_EXIBIR_RECORDE;
+        }
+    }
+    else if (e->telaAtual == TELA_EXIBIR_RECORDE) {
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_ESCAPE)) {
+            e->telaAtual = TELA_MENU;
         }
     }
     else if (e->telaAtual == TELA_JOGO) {
-        if (IsKeyPressed(KEY_P)) {
-            e->telaAtual = TELA_PAUSE;
-            e->cursorPause = 0;
-        }
-
+        if (IsKeyPressed(KEY_P)) e->telaAtual = TELA_PAUSE;
         if (e->mostrarDicaControle) {
             e->timerDicaControle -= GetFrameTime();
-            if (e->timerDicaControle <= 0.0f) {
-                e->mostrarDicaControle = false;
-            }
+            if (e->timerDicaControle <= 0.0f) e->mostrarDicaControle = false;
         }
 
         if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
-            if (e->jogador.pos.x > 0) {
-                e->jogador.pos.x -= 7;
-            }
+            if (e->jogador.pos.x > 0) e->jogador.pos.x -= 7;
         }
         if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
-            int x_maximo = e->telaLargura - e->jogador.largura;
-            if (e->jogador.pos.x < x_maximo) {
-                e->jogador.pos.x += 7;
+            if (e->jogador.pos.x < e->telaLargura - e->jogador.largura) e->jogador.pos.x += 7;
+        }
+
+        atualizarCorBola(e, GetTime());
+        atualizarParticulas(e);
+
+        if (e->tipoPowerupAtivo == 1) { 
+            e->timerPowerup -= GetFrameTime();
+            if (e->timerPowerup <= 0) {
+                e->tipoPowerupAtivo = 0;
+                e->jogador.largura = 100;
+            }
+        }
+
+        if (e->bolaPerfurante) {
+            e->timerAncora -= GetFrameTime();
+            if (e->timerAncora <= 0.0f) e->bolaPerfurante = false;
+        }
+
+        if (e->powerupDrop.ativo) {
+            e->powerupDrop.pos.y += 2.0f;
+            if (CheckCollisionRecs((Rectangle){e->powerupDrop.pos.x, e->powerupDrop.pos.y, 20, 20},
+                                   (Rectangle){e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20})) {
+                e->powerupDrop.ativo = false;
+                if (e->powerupDrop.tipo == 1) {
+                    e->tipoPowerupAtivo = 1;
+                    e->jogador.largura = 160;
+                    e->timerPowerup = 10.0f; 
+                } else if (e->powerupDrop.tipo == 2) {
+                    for(int k=0; k<MAX_BOLAS; k++) {
+                        if(!e->bolas[k].ativa) {
+                            e->bolas[k] = e->bolas[0];
+                            e->bolas[k].pos.x = e->jogador.pos.x + e->jogador.largura/2;
+                            e->bolas[k].pos.y = e->jogador.pos.y - 20;
+                            e->bolas[k].vel.dy = -fabs(e->bolas[0].vel.dy);
+                            e->bolas[k].vel.dx = (rand()%2 == 0) ? 4 : -4;
+                            e->bolas[k].ativa = true;
+                            break;
+                        }
+                    }
+                } else if (e->powerupDrop.tipo == 3) {
+                    e->bolaPerfurante = true; 
+                    e->timerAncora = 6.0f;
+                }
+            }
+            if (e->powerupDrop.pos.y > e->telaAltura) e->powerupDrop.ativo = false;
+        }
+
+        if (e->pontuacao >= 500) {
+            float tempo = GetTime();
+            float nivelBase = e->telaAltura - 200.0f; 
+            float amplitude = 90.0f;                  
+            e->alturaMare = nivelBase + (sin(tempo * 1.5f) * amplitude);
+        } else {
+            e->alturaMare = e->telaAltura + 100.0f;
+        }
+
+        int nivelAtualVelocidade = e->pontuacao / 350;
+        if (nivelAtualVelocidade > e->nivelVelocidade) {
+            e->nivelVelocidade = nivelAtualVelocidade;
+            for(int i=0; i<MAX_BOLAS; i++) {
+                if(e->bolas[i].ativa) {
+                    e->bolas[i].vel.dx *= 1.15f; 
+                    e->bolas[i].vel.dy *= 1.15f;
+                }
+            }
+        }
+
+        for(int i=0; i<MAX_BOLAS; i++) {
+            if (!e->bolas[i].ativa) continue;
+
+            float fatorVelocidade = 1.0f;
+            if (e->bolas[i].pos.y > e->alturaMare) fatorVelocidade = 0.65f; 
+
+            e->bolas[i].pos.x += e->bolas[i].vel.dx * fatorVelocidade;
+            e->bolas[i].pos.y += e->bolas[i].vel.dy * fatorVelocidade;
+
+            if (e->bolas[i].pos.y <= 10) {
+                e->bolas[i].pos.y = 10;
+                e->bolas[i].vel.dy *= -1;
+            }
+            if (e->bolas[i].pos.x <= 10) {
+                e->bolas[i].pos.x = 10;
+                e->bolas[i].vel.dx *= -1;
+            }
+            if (e->bolas[i].pos.x >= e->telaLargura - 10) {
+                e->bolas[i].pos.x = e->telaLargura - 10;
+                e->bolas[i].vel.dx *= -1;
+            }
+
+            if (e->bolas[i].pos.y >= e->telaAltura) {
+                e->bolas[i].ativa = false;
+            }
+        }
+
+        int bolasAtivas = 0;
+        for(int i=0; i<MAX_BOLAS; i++) {
+            if(e->bolas[i].ativa) bolasAtivas++;
+        }
+
+        if (bolasAtivas == 0) {
+            e->vidas--;
+            if (e->vidas <= 0) {
+                if (e->pontuacao > e->topScores[MAX_SCORES-1].pontuacao) {
+                    e->telaAtual = TELA_NOME_RECORDE;
+                    e->indiceLetra = 0;
+                    e->entradaNome[0] = '\0';
+                } else {
+                    e->telaAtual = TELA_EXIBIR_RECORDE;
+                }
+            } else {
+                e->jogador.largura = 100;
+                e->bolaPerfurante = false;
+                e->tipoPowerupAtivo = 0;
+                e->nivelVelocidade = e->pontuacao / 350; 
+
+                e->jogador.pos.x = e->telaLargura / 2 - (e->jogador.largura / 2);
+                e->jogador.pos.y = e->telaAltura - 60;
+                
+                for(int i=1; i<MAX_BOLAS; i++) e->bolas[i].ativa = false;
+                
+                e->bolas[0].ativa = true;
+                e->bolas[0].pos.x = e->telaLargura / 2;
+                e->bolas[0].pos.y = e->telaAltura - 70;
+                
+                if (rand() % 2 == 0) e->bolas[0].vel.dx = -4;
+                else e->bolas[0].vel.dx = 4;
+                e->bolas[0].vel.dy = -4;
+
+                float multiplicador = 1.0f + (e->nivelVelocidade * 0.15f);
+                e->bolas[0].vel.dx *= multiplicador;
+                e->bolas[0].vel.dy *= multiplicador;
+                
+                if (e->vidas == 1) e->timerAceleracao = 40.0f;
+                else e->timerAceleracao = 60.0f;
+            }
+        }
+
+        e->timerAceleracao -= GetFrameTime();
+        if (e->timerAceleracao <= 0.0f) {
+            for(int i=0; i<MAX_BOLAS; i++) {
+                if(e->bolas[i].ativa) {
+                    if (e->bolas[i].vel.dx > 0) e->bolas[i].vel.dx += 1;
+                    else e->bolas[i].vel.dx -= 1;
+
+                    if (e->bolas[i].vel.dy > 0) e->bolas[i].vel.dy += 1;
+                    else e->bolas[i].vel.dy -= 1;
+                }
+            }
+            if (e->vidas == 1) e->timerAceleracao = 40.0f;
+            else e->timerAceleracao = 60.0f;
+        }
+
+        if (e->blocosAtivos <= (BLOCO_LINHAS*BLOCO_COLUNAS)*0.3 && e->blocosParaRespawnar == 0) {
+            e->blocosParaRespawnar = 12;
+        }
+        if (e->blocosParaRespawnar > 0) {
+            e->timerRespawn -= GetFrameTime();
+            if (e->timerRespawn <= 0.0f) {
+                respawnarBlocoAleatorio(e);
+                e->blocosParaRespawnar--;
+                e->timerRespawn = 0.2f;
+            }
+        }
+
+        Rectangle jogadorRect = { (float)e->jogador.pos.x, (float)e->jogador.pos.y, (float)e->jogador.largura, 20.0f };
+
+        for(int i=0; i<MAX_BOLAS; i++) {
+            if(!e->bolas[i].ativa) continue;
+
+            Vector2 bolaCentro = { (float)e->bolas[i].pos.x, (float)e->bolas[i].pos.y };
+            float bolaRaio = 10.0f;
+
+            if (CheckCollisionCircleRec(bolaCentro, bolaRaio, jogadorRect)) {
+                if (e->bolas[i].vel.dy > 0) {
+                    float centroJogador = e->jogador.pos.x + e->jogador.largura / 2.0f;
+                    float diferenca = e->bolas[i].pos.x - centroJogador;
+                    float normalizado = diferenca / (e->jogador.largura / 2.0f);
+                    if (normalizado > 0.9f) normalizado = 0.9f;
+                    if (normalizado < -0.9f) normalizado = -0.9f;
+                    
+                    float magnitudeAtual = sqrt(pow(e->bolas[i].vel.dx, 2) + pow(e->bolas[i].vel.dy, 2));
+                    
+                    e->bolas[i].vel.dx = normalizado * magnitudeAtual;
+                    float restoVelocidade = pow(magnitudeAtual, 2) - pow(e->bolas[i].vel.dx, 2);
+                    if (restoVelocidade < 0) restoVelocidade = 0;
+
+                    e->bolas[i].vel.dy = -sqrt(restoVelocidade); 
+                    e->bolas[i].pos.y = e->jogador.pos.y - bolaRaio - 2.0f;
+                }
+            }
+            
+            Bloco *blocoAtual = e->listaDeBlocos;
+            Bloco *blocoAnterior = NULL;
+
+            while (blocoAtual != NULL) {
+                Bloco *proximoBloco = blocoAtual->proximo;
+
+                if (blocoAtual->ativo) {
+                    if (CheckCollisionCircleRec(bolaCentro, bolaRaio, blocoAtual->rect)) {
+                        
+                        spawnarParticulas(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y + blocoAtual->rect.height/2, blocoAtual->cor);
+                        spawnarPowerUp(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y);
+
+                        if (!e->bolaPerfurante) e->bolas[i].vel.dy *= -1;
+                        
+                        e->pontuacao += 10;
+                        blocoAtual->hp--;
+                        
+                        if (e->bolaPerfurante) blocoAtual->hp = 0;
+
+                        if (blocoAtual->hp == 2) blocoAtual->cor = (Color){ 30, 60, 180, 255 }; 
+                        else if (blocoAtual->hp == 1) blocoAtual->cor = (Color){ 200, 100, 100, 255 };
+
+                        if (blocoAtual->hp <= 0) {
+                            if (blocoAnterior == NULL) e->listaDeBlocos = proximoBloco;
+                            else blocoAnterior->proximo = proximoBloco;
+                            
+                            free(blocoAtual);
+                            blocoAtual = NULL;
+                            e->blocosAtivos--;
+                        }
+                        
+                        if (!e->bolaPerfurante) break; 
+                    }
+                }
+                if (blocoAtual != NULL) {
+                    blocoAnterior = blocoAtual;
+                    blocoAtual = proximoBloco;
+                }
             }
         }
     }
     else if (e->telaAtual == TELA_PAUSE) {
-        if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
-            e->cursorPause++;
-            if (e->cursorPause > 1) e->cursorPause = 0;
-        }
-        if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
-            e->cursorMenu--;
-            if (e->cursorPause < 0) e->cursorPause = 1;
-        }
-        if (IsKeyPressed(KEY_ENTER)) {
-            if (e->cursorPause == 0) {
-                e->telaAtual = TELA_JOGO;
-            } else if (e->cursorPause == 1) {
-                salvarTopScores(e);
-                e->telaAtual = TELA_MENU_PRINCIPAL;
-                initGame(e);
-            }
-        }
-    }
-    else if (e->telaAtual == TELA_TOP_SCORES) {
-        if (IsKeyPressed(KEY_Q)) {
-            e->telaAtual = TELA_MENU_PRINCIPAL;
-        }
-    }
-    else if (e->telaAtual == TELA_PERGUNTA_PERFIL) {
-        if (IsKeyPressed(KEY_Q)) {
-            e->telaAtual = TELA_MENU_PRINCIPAL;
-        }
-
-        if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
-            e->cursorMenu++;
-            if (e->cursorMenu > 1) e->cursorMenu = 0;
-        }
-        if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
-            e->cursorMenu--;
-            if (e->cursorMenu < 0) e->cursorMenu = 1;
-        }
-        if (IsKeyPressed(KEY_ENTER)) {
-            if (e->cursorMenu == 0) {
-                e->telaAtual = TELA_SELECIONAR_PERFIL;
-                e->cursorMenu = 0; 
-            } else if (e->cursorMenu == 1) { 
-                e->telaAtual = TELA_REGISTRAR_PERFIL; 
-                e->registroCursor = 0;
-                strcpy(e->registroIniciais, "___");
-            }
-        }
-    }
-    else if (e->telaAtual == TELA_REGISTRAR_PERFIL) {
-        if (IsKeyPressed(KEY_Q)) {
-            e->telaAtual = TELA_PERGUNTA_PERFIL;
-        }
-
-        int tecla = GetCharPressed();
-        while (tecla > 0) {
-            if (((tecla >= 'A' && tecla <= 'Z') || (tecla >= 'a' && tecla <= 'z')) && (e->registroCursor < 3)) {
-                if (tecla >= 'a' && tecla <= 'z') tecla = tecla - 32; 
-                e->registroIniciais[e->registroCursor] = (char)tecla;
-                e->registroCursor++;
-            }
-            tecla = GetCharPressed();
-        }
-
-        if (IsKeyPressed(KEY_BACKSPACE)) {
-            if (e->registroCursor > 0) {
-                e->registroCursor--;
-                e->registroIniciais[e->registroCursor] = '_';
-            }
-        }
-
-        if (IsKeyPressed(KEY_ENTER)) {
-            if (e->registroCursor == 3) {
-                if (e->numPerfis < MAX_PERFIS) {
-                    strcpy(e->perfis[e->numPerfis].iniciais, e->registroIniciais);
-                    e->perfis[e->numPerfis].recorde = 0;
-                    e->perfilSelecionado = e->numPerfis;
-                    e->numPerfis++;
-                } else {
-                    e->perfilSelecionado = 0;
-                }
-                
-                initGame(e);
-                e->telaAtual = TELA_JOGO;
-                
-            }
-        }
-    }
-    else if (e->telaAtual == TELA_SELECIONAR_PERFIL) {
-        if (IsKeyPressed(KEY_Q)) {
-            e->telaAtual = TELA_PERGUNTA_PERFIL;
-        }
-
-        if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
-            e->cursorMenu++;
-            if (e->cursorMenu >= e->numPerfis) e->cursorMenu = 0;
-        }
-        if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
-            e->cursorMenu--;
-            if (e->cursorMenu < 0) e->cursorMenu = e->numPerfis - 1;
-        }
-        if (IsKeyPressed(KEY_ENTER)) {
-            e->perfilSelecionado = e->cursorMenu;
-            initGame(e);
-            e->telaAtual = TELA_JOGO;
-        }
-    }
-}
-
-void atualizarBola(EstadoJogo* e) {
-    atualizarCorBola(e, GetTime());
-    atualizarParticulas(e);
-
-    if (e->tipoPowerupAtivo == 1) { 
-        e->timerPowerup -= GetFrameTime();
-        if (e->timerPowerup <= 0) {
-            e->tipoPowerupAtivo = 0;
-            e->jogador.largura = 100;
-        }
-    }
-
-    if (e->bolaPerfurante) {
-        e->timerAncora -= GetFrameTime();
-        if (e->timerAncora <= 0.0f) {
-            e->bolaPerfurante = false;
-        }
-    }
-
-    if (e->powerupDrop.ativo) {
-        e->powerupDrop.pos.y += 2.0f;
-        if (CheckCollisionRecs((Rectangle){e->powerupDrop.pos.x, e->powerupDrop.pos.y, 20, 20},
-                               (Rectangle){e->jogador.pos.x, e->jogador.pos.y, e->jogador.largura, 20})) {
-            e->powerupDrop.ativo = false;
-            
-            if (e->powerupDrop.tipo == 1) {
-                e->tipoPowerupAtivo = 1;
-                e->jogador.largura = 160;
-                e->timerPowerup = 10.0f; 
-            } else if (e->powerupDrop.tipo == 2) {
-                for(int k=0; k<MAX_BOLAS; k++) {
-                    if(!e->bolas[k].ativa) {
-                        e->bolas[k] = e->bolas[0];
-                        e->bolas[k].pos.x = e->jogador.pos.x + e->jogador.largura/2;
-                        e->bolas[k].pos.y = e->jogador.pos.y - 20;
-                        e->bolas[k].vel.dy = -abs(e->bolas[0].vel.dy);
-                        e->bolas[k].vel.dx = (rand()%2 == 0) ? 4 : -4;
-                        e->bolas[k].ativa = true;
-                        break;
-                    }
-                }
-            } else if (e->powerupDrop.tipo == 3) {
-                e->bolaPerfurante = true; 
-                e->timerAncora = 6.0f;
-            }
-        }
-        if (e->powerupDrop.pos.y > e->telaAltura) e->powerupDrop.ativo = false;
-    }
-
-    if (e->pontuacao >= 500) {
-        float tempo = GetTime();
-        float nivelBase = e->telaAltura - 200.0f; 
-        float amplitude = 90.0f;                  
-        e->alturaMare = nivelBase + (sin(tempo * 1.5f) * amplitude);
-    } else {
-        e->alturaMare = e->telaAltura + 100.0f;
-    }
-
-    int nivelAtualVelocidade = e->pontuacao / 350;
-    if (nivelAtualVelocidade > e->nivelVelocidade) {
-        e->nivelVelocidade = nivelAtualVelocidade;
-        for(int i=0; i<MAX_BOLAS; i++) {
-            if(e->bolas[i].ativa) {
-                e->bolas[i].vel.dx *= 1.15f; 
-                e->bolas[i].vel.dy *= 1.15f;
-            }
-        }
-    }
-
-    for(int i=0; i<MAX_BOLAS; i++) {
-        if (!e->bolas[i].ativa) continue;
-
-        float fatorVelocidade = 1.0f;
-        if (e->bolas[i].pos.y > e->alturaMare) {
-            fatorVelocidade = 0.65f; 
-        }
-
-        e->bolas[i].pos.x += e->bolas[i].vel.dx * fatorVelocidade;
-        e->bolas[i].pos.y += e->bolas[i].vel.dy * fatorVelocidade;
-
-        if (e->bolas[i].pos.y <= 10) {
-            e->bolas[i].pos.y = 10;
-            e->bolas[i].vel.dy *= -1;
-        }
-        if (e->bolas[i].pos.x <= 10) {
-            e->bolas[i].pos.x = 10;
-            e->bolas[i].vel.dx *= -1;
-        }
-        if (e->bolas[i].pos.x >= e->telaLargura - 10) {
-            e->bolas[i].pos.x = e->telaLargura - 10;
-            e->bolas[i].vel.dx *= -1;
-        }
-
-        if (e->bolas[i].pos.y >= e->telaAltura) {
-            e->bolas[i].ativa = false;
-        }
-    }
-
-    int bolasAtivas = 0;
-    for(int i=0; i<MAX_BOLAS; i++) {
-        if(e->bolas[i].ativa) bolasAtivas++;
-    }
-
-    if (bolasAtivas == 0) {
-        e->vidas--;
+        if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) e->cursorPause = !e->cursorPause;
+        if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) e->cursorPause = !e->cursorPause;
         
-        if (e->vidas <= 0) {
-            if (e->perfilSelecionado != -1) {
-                if (e->pontuacao > e->perfis[e->perfilSelecionado].recorde) {
-                    e->perfis[e->perfilSelecionado].recorde = e->pontuacao;
-                    ordenarPerfis(e);
-                    salvarTopScores(e);
-                }
-            }
-            e->telaAtual = TELA_MENU_PRINCIPAL;
-            initGame(e);
-        } else {
-            e->jogador.largura = 100;
-            e->bolaPerfurante = false;
-            e->tipoPowerupAtivo = 0;
-            e->nivelVelocidade = e->pontuacao / 350; 
-
-            e->jogador.pos.x = e->telaLargura / 2 - (e->jogador.largura / 2);
-            e->jogador.pos.y = e->telaAltura - 60;
-            
-            for(int i=1; i<MAX_BOLAS; i++) e->bolas[i].ativa = false;
-            
-            e->bolas[0].ativa = true;
-            e->bolas[0].pos.x = e->telaLargura / 2;
-            e->bolas[0].pos.y = e->telaAltura - 70;
-            
-            if (rand() % 2 == 0) e->bolas[0].vel.dx = -4;
-            else e->bolas[0].vel.dx = 4;
-            e->bolas[0].vel.dy = -4;
-
-            float multiplicador = 1.0f + (e->nivelVelocidade * 0.15f);
-            e->bolas[0].vel.dx *= multiplicador;
-            e->bolas[0].vel.dy *= multiplicador;
-            
-            if (e->vidas == 1) e->timerAceleracao = 40.0f;
-            else e->timerAceleracao = 60.0f;
-        }
-    }
-
-    e->timerAceleracao -= GetFrameTime();
-    if (e->timerAceleracao <= 0.0f) {
-        for(int i=0; i<MAX_BOLAS; i++) {
-            if(e->bolas[i].ativa) {
-                if (e->bolas[i].vel.dx > 0) e->bolas[i].vel.dx += 1;
-                else e->bolas[i].vel.dx -= 1;
-
-                if (e->bolas[i].vel.dy > 0) e->bolas[i].vel.dy += 1;
-                else e->bolas[i].vel.dy -= 1;
-            }
-        }
-        if (e->vidas == 1) e->timerAceleracao = 40.0f;
-        else e->timerAceleracao = 60.0f;
-    }
-
-    int totalBlocos = BLOCO_LINHAS * BLOCO_COLUNAS;
-    int limiteRespawn = totalBlocos * 0.30f; 
-
-    if (e->blocosAtivos <= limiteRespawn && e->blocosParaRespawnar == 0) {
-        e->blocosParaRespawnar = totalBlocos * 0.25f;
-        e->timerRespawn = 0.2f;
-    }
-
-    if (e->blocosParaRespawnar > 0) {
-        e->timerRespawn -= GetFrameTime();
-        if (e->timerRespawn <= 0.0f) {
-            respawnarBlocoAleatorio(e);
-            e->blocosParaRespawnar--;
-            e->timerRespawn = 0.2f;
-        }
-    }
-}
-
-void verificarColisoes(EstadoJogo* e) {
-    Rectangle jogadorRect = { (float)e->jogador.pos.x, (float)e->jogador.pos.y, (float)e->jogador.largura, 20.0f };
-
-    for(int i=0; i<MAX_BOLAS; i++) {
-        if(!e->bolas[i].ativa) continue;
-
-        Vector2 bolaCentro = { (float)e->bolas[i].pos.x, (float)e->bolas[i].pos.y };
-        float bolaRaio = 10.0f;
-
-        if (CheckCollisionCircleRec(bolaCentro, bolaRaio, jogadorRect)) {
-            if (e->bolas[i].vel.dy > 0) {
-                float centroJogador = e->jogador.pos.x + e->jogador.largura / 2.0f;
-                float diferenca = e->bolas[i].pos.x - centroJogador;
-                float normalizado = diferenca / (e->jogador.largura / 2.0f);
-                if (normalizado > 0.9f) normalizado = 0.9f;
-                if (normalizado < -0.9f) normalizado = -0.9f;
-                
-                float magnitudeAtual = sqrt(pow(e->bolas[i].vel.dx, 2) + pow(e->bolas[i].vel.dy, 2));
-                
-                e->bolas[i].vel.dx = normalizado * magnitudeAtual;
-                float restoVelocidade = pow(magnitudeAtual, 2) - pow(e->bolas[i].vel.dx, 2);
-                if (restoVelocidade < 0) restoVelocidade = 0;
-
-                e->bolas[i].vel.dy = -sqrt(restoVelocidade); 
-                e->bolas[i].pos.y = e->jogador.pos.y - bolaRaio - 2.0f;
-            }
-        }
-        
-        Bloco *blocoAtual = e->listaDeBlocos;
-        Bloco *blocoAnterior = NULL;
-
-        while (blocoAtual != NULL) {
-            Bloco *proximoBloco = blocoAtual->proximo;
-
-            if (blocoAtual->ativo) {
-                if (CheckCollisionCircleRec(bolaCentro, bolaRaio, blocoAtual->rect)) {
-                    
-                    spawnarParticulas(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y + blocoAtual->rect.height/2, blocoAtual->cor);
-                    spawnarPowerUp(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y);
-
-                    if (!e->bolaPerfurante) {
-                        e->bolas[i].vel.dy *= -1;
-                    }
-                    
-                    e->pontuacao += 10;
-                    blocoAtual->hp--;
-                    
-                    if (e->bolaPerfurante) blocoAtual->hp = 0;
-
-                    if (blocoAtual->hp == 2) {
-                        blocoAtual->cor = (Color){  30,  60, 180, 255 }; 
-                    } else if (blocoAtual->hp == 1) {
-                        blocoAtual->cor = (Color){ 200, 100, 100, 255 };
-                    }
-
-                    if (blocoAtual->hp <= 0) {
-                        if (blocoAnterior == NULL) {
-                            e->listaDeBlocos = proximoBloco;
-                        } else {
-                            blocoAnterior->proximo = proximoBloco;
-                        }
-                        
-                        free(blocoAtual);
-                        blocoAtual = NULL;
-                        e->blocosAtivos--;
-                    }
-                    
-                    if (!e->bolaPerfurante) break; 
-                }
-            }
-            
-            if (blocoAtual != NULL) {
-                blocoAnterior = blocoAtual;
-                blocoAtual = proximoBloco;
+        if (IsKeyPressed(KEY_ENTER)) {
+            if (e->cursorPause == 0) e->telaAtual = TELA_JOGO;
+            else {
+                e->telaAtual = TELA_MENU;
+                initGame(e); 
             }
         }
     }
@@ -754,14 +666,14 @@ void desenharTelaJogo(EstadoJogo* e) {
     }
 
     int recordeAtual = 0;
-    char iniciaisJogador[4] = "???";
-    
-    if (e->perfilSelecionado != -1 && e->perfilSelecionado < e->numPerfis) {
-        recordeAtual = e->perfis[e->perfilSelecionado].recorde;
-        strcpy(iniciaisJogador, e->perfis[e->perfilSelecionado].iniciais);
+    char nomeRecorde[4] = "---";
+
+    if (e->topScores[0].pontuacao > 0) {
+        recordeAtual = e->topScores[0].pontuacao;
+        strcpy(nomeRecorde, e->topScores[0].nome);
     }
     
-    DrawText(TextFormat("RECORDE(%s): %d", iniciaisJogador, recordeAtual), 20, 10, 20, DARKBLUE);
+    DrawText(TextFormat("RECORDE (%s): %d", nomeRecorde, recordeAtual), 20, 10, 20, DARKBLUE);
     
     const char* textoPontos = TextFormat("PONTOS: %d", e->pontuacao);
     DrawText(textoPontos, e->telaLargura / 2 - MeasureText(textoPontos, 20)/2, 10, 20, DARKBLUE);
@@ -770,36 +682,24 @@ void desenharTelaJogo(EstadoJogo* e) {
     DrawText(textoVidas, e->telaLargura - MeasureText(textoVidas, 20) - 20, 10, 20, DARKBLUE);
     
     if (e->bolaPerfurante) {
-        const char* textoAncora = TextFormat("ANCORA: %.1f", e->timerAncora);
-        DrawText(textoAncora, 20, 40, 20, DARKGRAY);
+        DrawText(TextFormat("ANCORA: %.1f", e->timerAncora), 20, 40, 20, DARKGRAY);
     }
 
     if (e->mostrarDicaControle) {
-        const char* dicaControle = "Use 'a' e 'd' para mover";
-        int dicaWidth = MeasureText(dicaControle, 20);
-        DrawText(dicaControle, e->telaLargura / 2 - dicaWidth / 2, e->telaAltura / 2, 20, DARKGRAY);
+        DrawText("Use 'a' e 'd' para mover", e->telaLargura / 2 - 100, e->telaAltura / 2, 20, DARKGRAY);
     }
 }
 
 void desenharTudo(EstadoJogo* e, Texture2D logo) { 
-    const char* escText = "Pressione ESC para fechar";
-    int escTextWidth = MeasureText(escText, 20);
-    DrawText(escText, e->telaLargura - escTextWidth - 10, e->telaAltura - 30, 20, DARKGRAY);
-
-    if (e->telaAtual == TELA_MENU_PRINCIPAL) {
+    if (e->telaAtual == TELA_MENU) {
         DrawRectangleGradientV(0, 0, e->telaLargura, e->telaAltura, (Color){10, 30, 50, 255}, (Color){20, 60, 100, 255});
-
-        int x_meio = e->telaLargura / 2;
-        int y_meio = e->telaAltura / 2;
-        int logoX = x_meio - logo.width / 2;
-        int logoY = y_meio - 300;
-        DrawTexture(logo, logoX, logoY, WHITE);
         
-        int fontSize = 30;
-        int spacing = 40;
-        DrawText(TextFormat("%s Iniciar Jogo", (e->cursorMenu == 0) ? ">" : " "), x_meio - MeasureText("> Iniciar Jogo", fontSize)/2, y_meio + 50, fontSize, WHITE);
-        DrawText(TextFormat("%s Top Scores", (e->cursorMenu == 1) ? ">" : " "), x_meio - MeasureText("> Top Scores", fontSize)/2, y_meio + spacing + 50, fontSize, WHITE);
-        DrawText(TextFormat("%s Sair", (e->cursorMenu == 2) ? ">" : " "), x_meio - MeasureText("> Sair", fontSize)/2, y_meio + spacing*2 + 50, fontSize, WHITE);
+        Rectangle source = { 0.0f, 0.0f, (float)logo.width, (float)logo.height };
+        Rectangle dest = { 0.0f, 0.0f, (float)e->telaLargura, (float)e->telaAltura };
+        Vector2 origin = { 0.0f, 0.0f };
+        DrawTexturePro(logo, source, dest, origin, 0.0f, WHITE);
+
+        DrawText("INICIAR", e->telaLargura/2 - MeasureText("INICIAR", 20)/2, e->telaAltura - 100, 20, WHITE);
     }
     else if (e->telaAtual == TELA_JOGO) {
         desenharTelaJogo(e);
@@ -807,95 +707,25 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
     }
     else if (e->telaAtual == TELA_PAUSE) {
         desenharTelaJogo(e);
-        
         DrawRectangle(0, 0, e->telaLargura, e->telaAltura, ColorAlpha(BLACK, 0.4f)); 
-        int x_meio = e->telaLargura / 2;
-        int y_meio = e->telaAltura / 2;
-        
-        DrawText("PAUSADO", x_meio - MeasureText("PAUSADO", 40)/2, y_meio - 80, 40, WHITE);
-        DrawText(TextFormat("%s Retornar", (e->cursorPause == 0) ? ">" : " "), x_meio - MeasureText("> Retornar", 30)/2, y_meio, 30, WHITE);
-        DrawText(TextFormat("%s Voltar para o Menu", (e->cursorPause == 1) ? ">" : " "), x_meio - MeasureText("> Voltar para o Menu", 30)/2, y_meio + 40, 30, WHITE);
+        DrawText("PAUSADO", e->telaLargura/2 - 60, e->telaAltura/2 - 80, 40, WHITE);
+        DrawText(e->cursorPause == 0 ? "> RETORNAR" : "  RETORNAR", e->telaLargura/2 - 60, e->telaAltura/2, 30, WHITE);
+        DrawText(e->cursorPause == 1 ? "> SAIR PARA MENU" : "  SAIR PARA MENU", e->telaLargura/2 - 60, e->telaAltura/2 + 40, 30, WHITE);
     }
-    else if (e->telaAtual == TELA_TOP_SCORES) {
-        DrawRectangle(0, 0, e->telaLargura, e->telaAltura, (Color){20, 20, 40, 255});
-        int x_meio = e->telaLargura / 2;
-        int y_meio = e->telaAltura / 2;
-        DrawText("TOP SCORES", x_meio - MeasureText("TOP SCORES", 40)/2, y_meio - 100, 40, YELLOW);
-        char textoPerfil[32];
-        
-        int limite = e->numPerfis;
-        if (limite > 8) limite = 8;
-
-        for (int i = 0; i < limite; i++) {
-            sprintf(textoPerfil, "%d. %s   %d", i + 1, e->perfis[i].iniciais, e->perfis[i].recorde);
-            DrawText(textoPerfil, x_meio - MeasureText(textoPerfil, 20)/2, y_meio - 30 + (i*30), 20, WHITE);
+    else if (e->telaAtual == TELA_NOME_RECORDE) {
+        DrawRectangleGradientV(0, 0, e->telaLargura, e->telaAltura, (Color){10, 30, 50, 255}, (Color){20, 60, 100, 255});
+        DrawText("NOVO RECORDE!", e->telaLargura/2 - 100, 200, 30, YELLOW);
+        DrawText(TextFormat("Pontos: %d", e->pontuacao), e->telaLargura/2 - 60, 250, 20, WHITE);
+        DrawText("Digite seu nome (3 letras):", e->telaLargura/2 - 120, 300, 20, GRAY);
+        DrawText(e->entradaNome, e->telaLargura/2 - 20, 350, 40, WHITE);
+    }
+    else if (e->telaAtual == TELA_EXIBIR_RECORDE) {
+        DrawRectangleGradientV(0, 0, e->telaLargura, e->telaAltura, (Color){10, 30, 50, 255}, (Color){20, 60, 100, 255});
+        DrawText("TOP 3 RECORDES", e->telaLargura/2 - 100, 100, 30, YELLOW);
+        for(int i=0; i<MAX_SCORES; i++) {
+            DrawText(TextFormat("%d. %s  .......  %d", i+1, e->topScores[i].nome, e->topScores[i].pontuacao), 
+                     e->telaLargura/2 - 100, 180 + (i*40), 20, WHITE);
         }
-        DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, e->telaAltura - 80, 20, GRAY);
+        DrawText("Pressione ENTER para voltar", e->telaLargura/2 - 120, e->telaAltura - 100, 20, GRAY);
     }
-    else if (e->telaAtual == TELA_PERGUNTA_PERFIL || e->telaAtual == TELA_REGISTRAR_PERFIL || e->telaAtual == TELA_SELECIONAR_PERFIL) {
-         DrawRectangle(0, 0, e->telaLargura, e->telaAltura, (Color){30, 30, 30, 255});
-         
-         int x_meio = e->telaLargura / 2;
-         int y_meio = e->telaAltura / 2;
-         
-         if (e->telaAtual == TELA_PERGUNTA_PERFIL) {
-            DrawText("Você já tem um perfil cadastrado?", x_meio - MeasureText("Você já tem um perfil cadastrado?", 30)/2, y_meio - 50, 30, WHITE);
-            DrawText(TextFormat("%s Sim (Carregar Perfil)", (e->cursorMenu == 0) ? ">" : " "), x_meio - MeasureText("> Sim (Carregar Perfil)", 20)/2, y_meio + 10, 20, WHITE);
-            DrawText(TextFormat("%s Não (Novo Perfil)", (e->cursorMenu == 1) ? ">" : " "), x_meio - MeasureText("> Não (Novo Perfil)", 20)/2, y_meio + 40, 20, WHITE);
-            DrawText("Pressione Q para voltar", x_meio - MeasureText("Pressione Q para voltar", 20)/2, y_meio + 100, 20, GRAY);
-         }
-         else if (e->telaAtual == TELA_REGISTRAR_PERFIL) {
-            DrawText("Digite suas 3 iniciais:", x_meio - MeasureText("Digite suas 3 iniciais:", 20)/2, y_meio - 50, 20, WHITE);
-            DrawText(TextFormat("%c %c %c", e->registroIniciais[0], e->registroIniciais[1], e->registroIniciais[2]), 
-                     x_meio - MeasureText("A B C", 40)/2, y_meio, 40, YELLOW);
-            if (e->registroCursor < 3) {
-                int x_cursor = x_meio - (MeasureText("A B C", 40)/2) + (e->registroCursor * 30) - 5;
-                DrawRectangle(x_cursor, y_meio + 45, 25, 5, YELLOW);
-            }
-            DrawText("Use BACKSPACE para apagar.", x_meio - MeasureText("Use BACKSPACE para apagar.", 20)/2, y_meio + 100, 20, GRAY);
-            DrawText("Aperte ENTER para confirmar (depois das 3)", x_meio - MeasureText("Aperte ENTER para confirmar (depois das 3)", 20)/2, y_meio + 130, 20, GRAY);
-         }
-         else if (e->telaAtual == TELA_SELECIONAR_PERFIL) {
-            DrawText("SELECIONE SEU PERFIL", x_meio - MeasureText("SELECIONE SEU PERFIL", 40)/2, y_meio - 100, 40, YELLOW);
-            char textoPerfil[32];
-            for (int i = 0; i < e->numPerfis; i++) {
-                Color cor = (e->cursorMenu == i) ? YELLOW : WHITE;
-                sprintf(textoPerfil, "%s %s (Recorde: %d)", (e->cursorMenu == i) ? ">" : " ", e->perfis[i].iniciais, e->perfis[i].recorde);
-                DrawText(textoPerfil, x_meio - MeasureText(textoPerfil, 25)/2, y_meio - 30 + (i*35), 25, cor);
-            }
-            DrawText("Pressione ENTER para selecionar", x_meio - MeasureText("Pressione ENTER para selecionar", 20)/2, y_meio + (e->numPerfis * 35) + 30, 20, GRAY);
-         }
-    }
-}
-
-void carregarTopScores(EstadoJogo* e) {
-    FILE *f = fopen(SCORE_FILE, "rb");
-    if (f == NULL) {
-        e->numPerfis = 0;
-        return;
-    }
-
-    if (fread(&(e->numPerfis), sizeof(int), 1, f) != 1) {
-        e->numPerfis = 0;
-    } else {
-        if (e->numPerfis > MAX_PERFIS) {
-            e->numPerfis = MAX_PERFIS;
-        }
-        fread(e->perfis, sizeof(Perfil), e->numPerfis, f);
-    }
-    
-    fclose(f);
-    ordenarPerfis(e);
-}
-
-void salvarTopScores(EstadoJogo* e) {
-    FILE *f = fopen(SCORE_FILE, "wb");
-    if (f == NULL) {
-        return;
-    }
-
-    fwrite(&(e->numPerfis), sizeof(int), 1, f);
-    fwrite(e->perfis, sizeof(Perfil), e->numPerfis, f);
-    
-    fclose(f);
 }

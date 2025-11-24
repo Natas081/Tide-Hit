@@ -3,19 +3,20 @@
 
 #include "raylib.h" 
 
-#define MAX_PERFIS 10
+#define MAX_SCORES 3
 #define BLOCO_LINHAS 5
 #define BLOCO_COLUNAS 10
 #define MAX_PARTICULAS 200
 #define MAX_BOLAS 6
 
-#define TELA_MENU_PRINCIPAL 0
+#define TELA_MENU 0
 #define TELA_JOGO 1
-#define TELA_TOP_SCORES 2
-#define TELA_PERGUNTA_PERFIL 3
-#define TELA_REGISTRAR_PERFIL 4
-#define TELA_SELECIONAR_PERFIL 5
-#define TELA_PAUSE 6
+#define TELA_PAUSE 2
+#define TELA_NOME_RECORDE 3
+#define TELA_EXIBIR_RECORDE 4
+
+#define LARGURA_TELA 800
+#define ALTURA_TELA 600
 
 typedef struct {
     float x;
@@ -42,9 +43,9 @@ typedef struct {
 } Bola;
 
 typedef struct {
-    char iniciais[4];
-    int recorde;
-} Perfil;
+    char nome[4];
+    int pontuacao;
+} RegistroScore;
 
 typedef struct Bloco {
     Rectangle rect;
@@ -77,11 +78,9 @@ typedef struct EstadoJogo {
     int timerSpeed;
     int deveSair;
     int telaAtual;
-    int cursorMenu;
-    Jogador jogador;
     
+    Jogador jogador;
     Bola bolas[MAX_BOLAS];
-
     Bloco *listaDeBlocos;
     
     int blocosAtivos;
@@ -90,12 +89,12 @@ typedef struct EstadoJogo {
     float timerRespawn;
 
     float alturaMare;
+    int nivelVelocidade;
 
-    Perfil perfis[MAX_PERFIS];
-    int numPerfis;
-    int perfilSelecionado;
-    char registroIniciais[4];
-    int registroCursor;
+    RegistroScore topScores[MAX_SCORES];
+    char entradaNome[4];
+    int indiceLetra;
+
     bool mostrarDicaControle;
     float timerDicaControle;
     int cursorPause;
@@ -107,20 +106,13 @@ typedef struct EstadoJogo {
     
     bool bolaPerfurante;
     float timerAncora;
-    int nivelVelocidade;
 
 } EstadoJogo;
 
 EstadoJogo* criarEstadoInicial(int largura, int altura);
 void liberarEstado(EstadoJogo* estado);
-void atualizarJogador(EstadoJogo* estado); 
-void atualizarBola(EstadoJogo* estado);
-void verificarColisoes(EstadoJogo* estado);
+void atualizarJogo(EstadoJogo* estado);
 void desenharTudo(EstadoJogo* estado, Texture2D logo); 
-void carregarNivel(EstadoJogo* estado, int nivel);
-void carregarTopScores(EstadoJogo* estado);
 void salvarTopScores(EstadoJogo* estado);
-void initGame(EstadoJogo* e);
-void respawnarBlocoAleatorio(EstadoJogo* e);
 
 #endif
