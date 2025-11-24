@@ -4,7 +4,7 @@
 
 ## Grupo:
 * **Felipe Espínola**
-* **Gabriel**
+* **Gabriel Victor**
 * **Natan Luis**
 
 ## Funcionalidades do Jogo
@@ -27,32 +27,63 @@ Requisitos:
 
 # Instruções de Compilação e Execução
 
-Ambiente Linux (ou WSL no Windows) utilizando `Make`.
+Ambiente **Linux** (ou WSL no Windows) utilizando `Make`.
 
 ### Pré-requisitos
-* GCC
-* Make
-* Git
+* **GCC**
+* **Make**
+* **Git**
 
-### 🏃 Como Rodar (Sequência Exata)
+### Como Rodar (Sequência Exata)
 
-Siga estes 10 passos no terminal:
+Siga estes 9 passos no terminal, executando um comando por vez:
 
-#### 1. Preparação
+#### 1. Preparação do Ambiente
 
-**Passo 1:**
-```bash
-sudo apt install
-sudo apt update
-sudo apt install build-essential git libx11-dev xserver-xorg-dev xorg-dev
+* **Passo 1:** Atualizar o sistema:
+    ```bash
+    sudo apt install
+    ```
+* **Passo 2:** Atualizar o sistema:
+    ```bash
+    sudo apt update
+    ```
 
-git clone [https://github.com/Natas081/Tide-Hit](https://github.com/Natas081/Tide-Hit)
+* **Passo 3:** Instalar ferramentas essenciais (compiladores e bibliotecas gráficas):
+    ```bash
+    sudo apt install build-essential git libx11-dev xserver-xorg-dev xorg-dev
+    ```
 
-cd Tide-Hit
+#### 2. Download e Compilação
 
-cd raylib/src
-make
+* **Passo 4:** Clonar o repositório:
+    ```bash
+    git clone https://github.com/Natas081/Tide-Hit
+    ```
+* **Passo 5:** Entrar na pasta do jogo:
+    ```bash
+    cd Tide-Hit
+    ```
+* **Passo 6:** Compilar a Raylib (entrar na pasta):
+    ```bash
+    cd raylib/src
+    ```
+* **Passo 7:** Compilar a Raylib (executar make):
+    ```bash
+    make
+    ```
+* **Passo 8:** Retornar à pasta raiz:
+    ```bash
+    cd ../..
+    ```
+* **Passo 9:** Compilar o jogo principal:
+    ```bash
+    make
+    ```
 
-cd ../..
-make
-./tidehit
+#### 3. Execução
+
+* **Passo 10:** Iniciar o jogo:
+    ```bash
+    ./tidehit
+    ```
