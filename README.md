@@ -25,36 +25,34 @@ Requisitos:
 - **Matrizes:** Mapeamento inicial do nível.
 - **Arquivos:** Leitura e escrita de recordes (`scores.dat`).
 
-## Instruções de Compilação e Execução
+# Instruções de Compilação e Execução
 
 Ambiente Linux (ou WSL no Windows) utilizando `Make`.
 
 ### Pré-requisitos
 * GCC
 * Make
-* Biblioteca Raylib instalada (`sudo apt install libraylib-dev`)
+* Git
 
-### Como rodar
-1. Clone este repositório:
-   ```bash
-   git clone [https://github.com/Natas081/Tide-Hit.git](https://github.com/Natas081/Tide-Hit.git)
+### 🏃 Como Rodar (Sequência Exata)
 
-   ✅ RESUMO BEM FÁCIL: Como fizemos para rodar o jogo no Linux
+Siga estes 10 passos no terminal:
 
-Instalamos coisas que o Linux precisa para rodar jogos.
-Tipo “programas de suporte”. Sem isso o computador não entende gráficos, janelas, sons etc.
+#### 1. Preparação
 
-Baixamos a Raylib, que é a “ferramenta” que seu jogo usa.
+**Passo 1:**
+```bash
+sudo apt install
+sudo apt update
+sudo apt install build-essential git libx11-dev xserver-xorg-dev xorg-dev
 
-Compilamos a Raylib no Linux.
-Isso é como “montar” a Raylib dentro do sistema para que o Linux saiba usar ela.
+git clone [https://github.com/Natas081/Tide-Hit](https://github.com/Natas081/Tide-Hit)
 
-Instalamos a Raylib no sistema, para qualquer jogo poder usar.
+cd Tide-Hit
 
-Entramos na pasta onde seu jogo está, que fica dentro do Windows, mas acessamos pelo Linux.
+cd raylib/src
+make
 
-Descobrimos qual arquivo tinha o main, ou seja, onde o jogo começa.
-
-Compilamos seu jogo usando o Raylib, juntando seus arquivos .c e a Raylib.
-
-Rodamos o jogo, e pronto — ele abriu normal no Linux.
+cd ../..
+make
+./tidehit
