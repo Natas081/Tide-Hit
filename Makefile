@@ -3,9 +3,9 @@ CC = gcc
 SRCS = tidehit.c game.c
 OBJS = $(SRCS:.c=.o)
 
-CFLAGS = -Wall -I. -g
+CFLAGS = -Wall -Iraylib/src -I. -g
 
-LIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+LIBS = raylib/src/libraylib.a -lGL -lm -lpthread -ldl -lrt -lX11
 LDFLAGS =
 
 all: $(TARGET)
