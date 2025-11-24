@@ -36,9 +36,9 @@ Ambiente **Linux** (ou WSL no Windows) utilizando `Make`.
 
 ### Como Rodar (Sequência Exata)
 
-Siga estes 9 passos no terminal, executando um comando por vez:
+Siga estes 10 passos no terminal, executando um comando por vez:
 
-#### 1. Preparação do Ambiente
+#### Preparação do Ambiente
 
 * **Passo 1:** Atualizar o sistema:
     ```bash
@@ -54,7 +54,7 @@ Siga estes 9 passos no terminal, executando um comando por vez:
     sudo apt install build-essential git libx11-dev xserver-xorg-dev xorg-dev
     ```
 
-#### 2. Download e Compilação
+#### Download e Compilação
 
 * **Passo 4:** Clonar o repositório:
     ```bash
@@ -81,7 +81,7 @@ Siga estes 9 passos no terminal, executando um comando por vez:
     make
     ```
 
-#### 3. Execução
+#### Execução
 
 * **Passo 10:** Iniciar o jogo:
     ```bash
