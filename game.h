@@ -14,11 +14,14 @@
 #define TELA_NOME_RECORDE 3
 #define TELA_EXIBIR_RECORDE 4
 
+
+
 #define LARGURA_TELA 800
 #define ALTURA_TELA 600
 
 typedef struct {
     float x;
+    
     float y;
 } Posicao;
 

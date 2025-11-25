@@ -110,10 +110,10 @@ void limparBlocos(EstadoJogo* e) {
     e->listaDeBlocos = NULL;
     e->blocosAtivos = 0;
 }
-
 void respawnarBlocoAleatorio(EstadoJogo* e) {
     int larguraBloco = 60;
     int alturaBloco = 20;
+
     int espacoHorizontal = 20;
     int espacoVertical = 10;
     int offsetHorizontal = (e->telaLargura - (BLOCO_COLUNAS * (larguraBloco + espacoHorizontal)) + espacoHorizontal) / 2;
@@ -126,13 +126,21 @@ void respawnarBlocoAleatorio(EstadoJogo* e) {
     int tentativas = 0;
     while (tentativas < 50) { 
         int i = rand() % BLOCO_LINHAS;
+
+
         int j = rand() % BLOCO_COLUNAS;
 
         float newX = offsetHorizontal + j * (larguraBloco + espacoHorizontal);
+
+
         float newY = offsetVertical + i * (alturaBloco + espacoVertical);
         
         bool slotOcupado = false;
+
+
         Bloco *blocoAtual = e->listaDeBlocos;
+
+
         while (blocoAtual != NULL) {
             if (blocoAtual->rect.x == newX && blocoAtual->rect.y == newY) {
                 slotOcupado = true;
@@ -174,16 +182,23 @@ void carregarNivel(EstadoJogo* e, int nivel) {
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
     };
+
     
     int larguraBloco = 60;
     int alturaBloco = 20;
     int espacoHorizontal = 20;
     int espacoVertical = 10;
+
     int offsetHorizontal = (e->telaLargura - (BLOCO_COLUNAS * (larguraBloco + espacoHorizontal)) + espacoHorizontal) / 2;
     int offsetVertical = 50;
     
     Color corHP3 = (Color){ 100, 100, 100, 255 }; 
+
+
     Color corHP2 = (Color){  30,  60, 180, 255 }; 
+
+
+
     Color corHP1 = (Color){ 200, 100, 100, 255 };
 
     for (int i = 0; i < BLOCO_LINHAS; i++) {
@@ -194,9 +209,15 @@ void carregarNivel(EstadoJogo* e, int nivel) {
                 
                 novoBloco->rect.x = offsetHorizontal + j * (larguraBloco + espacoHorizontal);
                 novoBloco->rect.y = offsetVertical + i * (alturaBloco + espacoVertical);
+
+
                 novoBloco->rect.width = larguraBloco;
                 novoBloco->rect.height = alturaBloco;
+
+
                 novoBloco->ativo = true;
+
+
                 
                 if (i < 2) {
                     novoBloco->hp = 3;
@@ -715,4 +736,3 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
     }
 
 }
-
