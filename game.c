@@ -268,7 +268,6 @@ void initGame(EstadoJogo* e) {
     
     e->mostrarDicaControle = true;
     e->timerDicaControle = 3.0f;
-    e->cursorPause = 0;
     
     e->timerAceleracao = 60.0f;
     e->timerRespawn = 0.2f;
@@ -360,7 +359,6 @@ void atualizarJogo(EstadoJogo* e) {
         }
     }
     else if (e->telaAtual == TELA_JOGO) {
-        if (IsKeyPressed(KEY_P)) e->telaAtual = TELA_PAUSE;
         if (e->mostrarDicaControle) {
             e->timerDicaControle -= GetFrameTime();
             if (e->timerDicaControle <= 0.0f) e->mostrarDicaControle = false;
@@ -603,18 +601,6 @@ void atualizarJogo(EstadoJogo* e) {
             }
         }
     }
-    else if (e->telaAtual == TELA_PAUSE) {
-        if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) e->cursorPause = !e->cursorPause;
-        if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) e->cursorPause = !e->cursorPause;
-        
-        if (IsKeyPressed(KEY_ENTER)) {
-            if (e->cursorPause == 0) e->telaAtual = TELA_JOGO;
-            else {
-                e->telaAtual = TELA_MENU;
-                initGame(e); 
-            }
-        }
-    }
 }
 
 void desenharTelaJogo(EstadoJogo* e) {
@@ -703,14 +689,6 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
     }
     else if (e->telaAtual == TELA_JOGO) {
         desenharTelaJogo(e);
-        DrawText("Pressione P para pausar", 10, e->telaAltura - 30, 20, DARKGRAY);
-    }
-    else if (e->telaAtual == TELA_PAUSE) {
-        desenharTelaJogo(e);
-        DrawRectangle(0, 0, e->telaLargura, e->telaAltura, ColorAlpha(BLACK, 0.4f)); 
-        DrawText("PAUSADO", e->telaLargura/2 - 60, e->telaAltura/2 - 80, 40, WHITE);
-        DrawText(e->cursorPause == 0 ? "> RETORNAR" : "  RETORNAR", e->telaLargura/2 - 60, e->telaAltura/2, 30, WHITE);
-        DrawText(e->cursorPause == 1 ? "> SAIR PARA MENU" : "  SAIR PARA MENU", e->telaLargura/2 - 60, e->telaAltura/2 + 40, 30, WHITE);
     }
     else if (e->telaAtual == TELA_NOME_RECORDE) {
         DrawRectangleGradientV(0, 0, e->telaLargura, e->telaAltura, (Color){10, 30, 50, 255}, (Color){20, 60, 100, 255});
@@ -737,3 +715,4 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
     }
 
 }
+
