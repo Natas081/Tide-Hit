@@ -704,8 +704,6 @@ void desenharTudo(EstadoJogo* e, Texture2D logo, Texture2D imgRecorde, Texture2D
         Rectangle dest = { 0.0f, 0.0f, (float)e->telaLargura, (float)e->telaAltura };
         Vector2 origin = { 0.0f, 0.0f };
         DrawTexturePro(logo, source, dest, origin, 0.0f, WHITE);
-
-        DrawText("INICIAR", e->telaLargura/2 - MeasureText("INICIAR", 20)/2, e->telaAltura - 100, 20, WHITE);
     }
     else if (e->telaAtual == TELA_JOGO) {
         desenharTelaJogo(e);
@@ -726,10 +724,10 @@ void desenharTudo(EstadoJogo* e, Texture2D logo, Texture2D imgRecorde, Texture2D
         int xPrompt = e->telaLargura/2 - MeasureText(txtPrompt, 20)/2;
         int xNome = e->telaLargura/2 - MeasureText(txtNome, 40)/2;
 
-        DrawText(txtTitulo, xTitulo, 230, 30, YELLOW);
-        DrawText(txtPontos, xPontos, 280, 20, WHITE);
-        DrawText(txtPrompt, xPrompt, 340, 20, SKYBLUE);
-        DrawText(txtNome, xNome, 380, 40, WHITE);
+        DrawText(txtTitulo, xTitulo, 180, 30, YELLOW);
+        DrawText(txtPontos, xPontos, 230, 20, WHITE);
+        DrawText(txtPrompt, xPrompt, 260, 20, SKYBLUE);
+        DrawText(txtNome, xNome, 300, 40, WHITE);
     }
     else if (e->telaAtual == TELA_EXIBIR_RECORDE) {
         Rectangle source = { 0.0f, 0.0f, (float)imgTopScores.width, (float)imgTopScores.height };
