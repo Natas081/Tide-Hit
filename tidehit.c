@@ -12,6 +12,7 @@ int main(void)
     Texture2D logo = LoadTexture("Imagem_menu.png"); 
     Texture2D imgRecorde = LoadTexture("Imagem_inserir_recorde.png");
     Texture2D imgTopScores = LoadTexture("Imagem_top_scores.png");
+    Texture2D imgComoJogar = LoadTexture("Como_jogar.png");
 
     EstadoJogo* estado = criarEstadoInicial(LARGURA_TELA, ALTURA_TELA);
     if (estado == NULL) return 1; 
@@ -24,7 +25,7 @@ int main(void)
         
         BeginDrawing();
             ClearBackground(BLACK); 
-            desenharTudo(estado, logo, imgRecorde, imgTopScores);
+            desenharTudo(estado, logo, imgRecorde, imgTopScores, imgComoJogar);
         EndDrawing();
     }
 
@@ -33,6 +34,7 @@ int main(void)
     UnloadTexture(logo); 
     UnloadTexture(imgRecorde);
     UnloadTexture(imgTopScores);
+    UnloadTexture(imgComoJogar);
     
     liberarEstado(estado); 
     

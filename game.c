@@ -56,33 +56,6 @@ void inserirNovoRecorde(EstadoJogo* e) {
     }
 }
 
-void spawnarParticulas(EstadoJogo* e, float x, float y, Color cor) {
-    int count = 0;
-    for (int i = 0; i < MAX_PARTICULAS; i++) {
-        if (!e->particulas[i].ativa) {
-            e->particulas[i].ativa = true;
-            e->particulas[i].pos = (Vector2){ x, y };
-            e->particulas[i].vel = (Vector2){ (float)(rand()%10 - 5), (float)(rand()%10 - 5) };
-            e->particulas[i].cor = cor;
-            e->particulas[i].vida = 1.0f;
-            count++;
-            if (count >= 10) break;
-        }
-    }
-}
-
-void atualizarParticulas(EstadoJogo* e) {
-    for (int i = 0; i < MAX_PARTICULAS; i++) {
-        if (e->particulas[i].ativa) {
-            e->particulas[i].pos.x += e->particulas[i].vel.x;
-            e->particulas[i].pos.y += e->particulas[i].vel.y;
-            e->particulas[i].vel.y += 0.5f; 
-            e->particulas[i].vida -= 0.03f;
-            if (e->particulas[i].vida <= 0) e->particulas[i].ativa = false;
-        }
-    }
-}
-
 void spawnarPowerUp(EstadoJogo* e, float x, float y) {
     if (!e->powerupDrop.ativo && (rand() % 100 < 15)) { 
         e->powerupDrop.ativo = true;
@@ -110,6 +83,7 @@ void limparBlocos(EstadoJogo* e) {
     e->listaDeBlocos = NULL;
     e->blocosAtivos = 0;
 }
+
 void respawnarBlocoAleatorio(EstadoJogo* e) {
     int larguraBloco = 60;
     int alturaBloco = 20;
@@ -126,20 +100,13 @@ void respawnarBlocoAleatorio(EstadoJogo* e) {
     int tentativas = 0;
     while (tentativas < 50) { 
         int i = rand() % BLOCO_LINHAS;
-
-
         int j = rand() % BLOCO_COLUNAS;
 
         float newX = offsetHorizontal + j * (larguraBloco + espacoHorizontal);
-
-
         float newY = offsetVertical + i * (alturaBloco + espacoVertical);
         
         bool slotOcupado = false;
-
-
         Bloco *blocoAtual = e->listaDeBlocos;
-
 
         while (blocoAtual != NULL) {
             if (blocoAtual->rect.x == newX && blocoAtual->rect.y == newY) {
@@ -183,7 +150,6 @@ void carregarNivel(EstadoJogo* e, int nivel) {
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
     };
 
-    
     int larguraBloco = 60;
     int alturaBloco = 20;
     int espacoHorizontal = 20;
@@ -193,12 +159,7 @@ void carregarNivel(EstadoJogo* e, int nivel) {
     int offsetVertical = 50;
     
     Color corHP3 = (Color){ 100, 100, 100, 255 }; 
-
-
     Color corHP2 = (Color){  30,  60, 180, 255 }; 
-
-
-
     Color corHP1 = (Color){ 200, 100, 100, 255 };
 
     for (int i = 0; i < BLOCO_LINHAS; i++) {
@@ -209,15 +170,9 @@ void carregarNivel(EstadoJogo* e, int nivel) {
                 
                 novoBloco->rect.x = offsetHorizontal + j * (larguraBloco + espacoHorizontal);
                 novoBloco->rect.y = offsetVertical + i * (alturaBloco + espacoVertical);
-
-
                 novoBloco->rect.width = larguraBloco;
                 novoBloco->rect.height = alturaBloco;
-
-
                 novoBloco->ativo = true;
-
-
                 
                 if (i < 2) {
                     novoBloco->hp = 3;
@@ -233,32 +188,6 @@ void carregarNivel(EstadoJogo* e, int nivel) {
                 novoBloco->proximo = e->listaDeBlocos;
                 e->listaDeBlocos = novoBloco;
                 e->blocosAtivos++;
-            }
-        }
-    }
-}
-
-Color gerarCorRGB(float tempo) {
-    unsigned char r = (sin(tempo * 2.0f) * 127 + 128);
-    unsigned char g = (sin(tempo * 2.0f + 2.094f) * 127 + 128);
-    unsigned char b = (sin(tempo * 2.0f + 4.188f) * 127 + 128);
-    return (Color){ r, g, b, 255 };
-}
-
-void atualizarCorBola(EstadoJogo* e, float tempo) {
-    int fase = e->pontuacao / 100;      
-    if (fase > 7) fase = 7;  
-
-    Color coresArcoIris[8] = {
-        RED, ORANGE, YELLOW, GREEN, BLUE, DARKBLUE, PURPLE, VIOLET
-    };
-
-    for(int i=0; i<MAX_BOLAS; i++) {
-        if(e->bolas[i].ativa) {
-            if (fase < 7) {
-                e->bolas[i].cor = coresArcoIris[fase];
-            } else {
-                e->bolas[i].cor = gerarCorRGB(tempo);
             }
         }
     }
@@ -290,13 +219,11 @@ void initGame(EstadoJogo* e) {
     e->mostrarDicaControle = true;
     e->timerDicaControle = 3.0f;
     
-    e->timerAceleracao = 60.0f;
     e->timerRespawn = 0.2f;
     e->blocosParaRespawnar = 0;
     
     e->alturaMare = e->telaAltura + 100.0f;
 
-    for(int i=0; i<MAX_PARTICULAS; i++) e->particulas[i].ativa = false;
     e->powerupDrop.ativo = false;
     e->tipoPowerupAtivo = 0;
     e->timerPowerup = 0;
@@ -320,7 +247,6 @@ EstadoJogo* criarEstadoInicial(int largura, int altura) {
     
     e->blocosAtivos = 0;
     e->blocosParaRespawnar = 0;
-    e->timerAceleracao = 0.0f;
     e->timerRespawn = 0.0f;
 
     e->telaAtual = TELA_MENU;
@@ -345,11 +271,16 @@ void atualizarJogo(EstadoJogo* e) {
     
     if (e->telaAtual == TELA_MENU) {
         if (IsKeyPressed(KEY_ENTER)) {
-            initGame(e);
-            e->telaAtual = TELA_JOGO;
+            e->telaAtual = TELA_COMO_JOGAR;
         }
         if (IsKeyPressed(KEY_ESCAPE)) {
             e->deveSair = 1;
+        }
+    }
+    else if (e->telaAtual == TELA_COMO_JOGAR) {
+        if (IsKeyPressed(KEY_ENTER)) {
+            initGame(e);
+            e->telaAtual = TELA_JOGO;
         }
     }
     else if (e->telaAtual == TELA_NOME_RECORDE) {
@@ -391,9 +322,6 @@ void atualizarJogo(EstadoJogo* e) {
         if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
             if (e->jogador.pos.x < e->telaLargura - e->jogador.largura) e->jogador.pos.x += 7;
         }
-
-        atualizarCorBola(e, GetTime());
-        atualizarParticulas(e);
 
         if (e->tipoPowerupAtivo == 1) { 
             e->timerPowerup -= GetFrameTime();
@@ -521,25 +449,7 @@ void atualizarJogo(EstadoJogo* e) {
                 float multiplicador = 1.0f + (e->nivelVelocidade * 0.15f);
                 e->bolas[0].vel.dx *= multiplicador;
                 e->bolas[0].vel.dy *= multiplicador;
-                
-                if (e->vidas == 1) e->timerAceleracao = 40.0f;
-                else e->timerAceleracao = 60.0f;
             }
-        }
-
-        e->timerAceleracao -= GetFrameTime();
-        if (e->timerAceleracao <= 0.0f) {
-            for(int i=0; i<MAX_BOLAS; i++) {
-                if(e->bolas[i].ativa) {
-                    if (e->bolas[i].vel.dx > 0) e->bolas[i].vel.dx += 1;
-                    else e->bolas[i].vel.dx -= 1;
-
-                    if (e->bolas[i].vel.dy > 0) e->bolas[i].vel.dy += 1;
-                    else e->bolas[i].vel.dy -= 1;
-                }
-            }
-            if (e->vidas == 1) e->timerAceleracao = 40.0f;
-            else e->timerAceleracao = 60.0f;
         }
 
         if (e->blocosAtivos <= (BLOCO_LINHAS*BLOCO_COLUNAS)*0.3 && e->blocosParaRespawnar == 0) {
@@ -590,7 +500,6 @@ void atualizarJogo(EstadoJogo* e) {
                 if (blocoAtual->ativo) {
                     if (CheckCollisionCircleRec(bolaCentro, bolaRaio, blocoAtual->rect)) {
                         
-                        spawnarParticulas(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y + blocoAtual->rect.height/2, blocoAtual->cor);
                         spawnarPowerUp(e, blocoAtual->rect.x + blocoAtual->rect.width/2, blocoAtual->rect.y);
 
                         if (!e->bolaPerfurante) e->bolas[i].vel.dy *= -1;
@@ -608,14 +517,17 @@ void atualizarJogo(EstadoJogo* e) {
                             else blocoAnterior->proximo = proximoBloco;
                             
                             free(blocoAtual);
-                            blocoAtual = NULL;
+                            blocoAtual = NULL; 
                             e->blocosAtivos--;
                         }
                         
                         if (!e->bolaPerfurante) break; 
                     }
                 }
-                if (blocoAtual != NULL) {
+
+                if (blocoAtual == NULL) {
+                    blocoAtual = proximoBloco;
+                } else {
                     blocoAnterior = blocoAtual;
                     blocoAtual = proximoBloco;
                 }
@@ -623,7 +535,6 @@ void atualizarJogo(EstadoJogo* e) {
         }
     }
 }
-
 void desenharTelaJogo(EstadoJogo* e) {
     desenharFundoPraia(e->telaLargura, e->telaAltura);
 
@@ -645,12 +556,6 @@ void desenharTelaJogo(EstadoJogo* e) {
         DrawCircleV(e->powerupDrop.pos, 10, pColor);
         DrawText(e->powerupDrop.tipo == 3 ? "A" : (e->powerupDrop.tipo == 2 ? "2x" : "W"), 
                  e->powerupDrop.pos.x - 5, e->powerupDrop.pos.y - 10, 20, WHITE);
-    }
-
-    for (int i = 0; i < MAX_PARTICULAS; i++) {
-        if (e->particulas[i].ativa) {
-            DrawRectangle(e->particulas[i].pos.x, e->particulas[i].pos.y, 4, 4, Fade(e->particulas[i].cor, e->particulas[i].vida));
-        }
     }
 
     Color corPlayer = BLACK;
@@ -697,13 +602,19 @@ void desenharTelaJogo(EstadoJogo* e) {
     }
 }
 
-void desenharTudo(EstadoJogo* e, Texture2D logo, Texture2D imgRecorde, Texture2D imgTopScores) { 
+void desenharTudo(EstadoJogo* e, Texture2D logo, Texture2D imgRecorde, Texture2D imgTopScores, Texture2D imgComoJogar) { 
     
     if (e->telaAtual == TELA_MENU) {
         Rectangle source = { 0.0f, 0.0f, (float)logo.width, (float)logo.height };
         Rectangle dest = { 0.0f, 0.0f, (float)e->telaLargura, (float)e->telaAltura };
         Vector2 origin = { 0.0f, 0.0f };
         DrawTexturePro(logo, source, dest, origin, 0.0f, WHITE);
+    }
+    else if (e->telaAtual == TELA_COMO_JOGAR) {
+        Rectangle source = { 0.0f, 0.0f, (float)imgComoJogar.width, (float)imgComoJogar.height };
+        Rectangle dest = { 0.0f, 0.0f, (float)e->telaLargura, (float)e->telaAltura };
+        Vector2 origin = { 0.0f, 0.0f };
+        DrawTexturePro(imgComoJogar, source, dest, origin, 0.0f, WHITE);
     }
     else if (e->telaAtual == TELA_JOGO) {
         desenharTelaJogo(e);
