@@ -3,12 +3,16 @@
 #include <stdlib.h> 
 #include <time.h>
 
-int main(void){
+int main(void)
+{
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
-    SetConfigFlags(FLAG_WINDOW_HIGHDPI);
     InitWindow(LARGURA_TELA, ALTURA_TELA, "Tide Hit!");
     InitAudioDevice();
     srand(time(NULL));
+
+    RenderTexture2D target = LoadRenderTexture(LARGURA_TELA, ALTURA_TELA);
+    SetTextureFilter(target.texture, TEXTURE_FILTER_POINT);
 
     Texture2D logo = LoadTexture("Imagem_menu.png"); 
     Texture2D imgRecorde = LoadTexture("Imagem_inserir_recorde.png");
@@ -24,14 +28,25 @@ int main(void){
     {
         atualizarJogo(estado);
         
-        BeginDrawing();
+        BeginTextureMode(target);
             ClearBackground(BLACK); 
             desenharTudo(estado, logo, imgRecorde, imgTopScores, imgComoJogar);
+        EndTextureMode();
+
+        BeginDrawing();
+            ClearBackground(BLACK);
+            
+            Rectangle sourceRec = { 0.0f, 0.0f, (float)target.texture.width, (float)-target.texture.height };
+            Rectangle destRec = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() };
+            Vector2 origin = { 0.0f, 0.0f };
+            
+            DrawTexturePro(target.texture, sourceRec, destRec, origin, 0.0f, WHITE);
         EndDrawing();
     }
 
     salvarTopScores(estado);
     
+    UnloadRenderTexture(target);
     UnloadTexture(logo); 
     UnloadTexture(imgRecorde);
     UnloadTexture(imgTopScores);
