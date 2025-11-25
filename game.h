@@ -11,7 +11,6 @@
 
 #define TELA_MENU 0
 #define TELA_JOGO 1
-#define TELA_PAUSE 2
 #define TELA_NOME_RECORDE 3
 #define TELA_EXIBIR_RECORDE 4
 
@@ -97,7 +96,6 @@ typedef struct EstadoJogo {
 
     bool mostrarDicaControle;
     float timerDicaControle;
-    int cursorPause;
 
     Particula particulas[MAX_PARTICULAS];
     PowerUp powerupDrop;
@@ -114,5 +112,6 @@ void liberarEstado(EstadoJogo* estado);
 void atualizarJogo(EstadoJogo* estado);
 void desenharTudo(EstadoJogo* estado, Texture2D logo); 
 void salvarTopScores(EstadoJogo* estado);
+
 
 #endif
