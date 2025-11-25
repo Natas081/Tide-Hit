@@ -596,10 +596,6 @@ void desenharTelaJogo(EstadoJogo* e) {
     if (e->bolaPerfurante) {
         DrawText(TextFormat("ANCORA: %.1f", e->timerAncora), 20, 40, 20, DARKGRAY);
     }
-
-    if (e->mostrarDicaControle) {
-        DrawText("Use 'a' e 'd' para mover", e->telaLargura / 2 - 100, e->telaAltura / 2, 20, DARKGRAY);
-    }
 }
 
 void desenharTudo(EstadoJogo* e, Texture2D logo, Texture2D imgRecorde, Texture2D imgTopScores, Texture2D imgComoJogar) { 

@@ -3,8 +3,9 @@
 #include <stdlib.h> 
 #include <time.h>
 
-int main(void)
-{
+int main(void){
+
+    SetConfigFlags(FLAG_WINDOW_HIGHDPI);
     InitWindow(LARGURA_TELA, ALTURA_TELA, "Tide Hit!");
     InitAudioDevice();
     srand(time(NULL));
