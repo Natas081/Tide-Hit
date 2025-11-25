@@ -113,7 +113,7 @@ typedef struct EstadoJogo {
 EstadoJogo* criarEstadoInicial(int largura, int altura);
 void liberarEstado(EstadoJogo* estado);
 void atualizarJogo(EstadoJogo* estado);
-void desenharTudo(EstadoJogo* estado, Texture2D logo); 
+void desenharTudo(EstadoJogo* estado, Texture2D logo, Texture2D imgRecorde, Texture2D imgTopScores);
 void salvarTopScores(EstadoJogo* estado);
 
 

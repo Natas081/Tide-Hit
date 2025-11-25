@@ -697,10 +697,9 @@ void desenharTelaJogo(EstadoJogo* e) {
     }
 }
 
-void desenharTudo(EstadoJogo* e, Texture2D logo) { 
+void desenharTudo(EstadoJogo* e, Texture2D logo, Texture2D imgRecorde, Texture2D imgTopScores) { 
+    
     if (e->telaAtual == TELA_MENU) {
-        DrawRectangleGradientV(0, 0, e->telaLargura, e->telaAltura, (Color){10, 30, 50, 255}, (Color){20, 60, 100, 255});
-        
         Rectangle source = { 0.0f, 0.0f, (float)logo.width, (float)logo.height };
         Rectangle dest = { 0.0f, 0.0f, (float)e->telaLargura, (float)e->telaAltura };
         Vector2 origin = { 0.0f, 0.0f };
@@ -712,27 +711,44 @@ void desenharTudo(EstadoJogo* e, Texture2D logo) {
         desenharTelaJogo(e);
     }
     else if (e->telaAtual == TELA_NOME_RECORDE) {
-        DrawRectangleGradientV(0, 0, e->telaLargura, e->telaAltura, (Color){10, 30, 50, 255}, (Color){20, 60, 100, 255});
-        DrawText("NOVO RECORDE!", e->telaLargura/2 - 100, 200, 30, YELLOW);
-        DrawText(TextFormat("Pontos: %d", e->pontuacao), e->telaLargura/2 - 60, 250, 20, WHITE);
-        DrawText("Digite seu nome (3 letras):", e->telaLargura/2 - 120, 300, 20, GRAY);
-        DrawText(e->entradaNome, e->telaLargura/2 - 20, 350, 40, WHITE);
+        Rectangle source = { 0.0f, 0.0f, (float)imgRecorde.width, (float)imgRecorde.height };
+        Rectangle dest = { 0.0f, 0.0f, (float)e->telaLargura, (float)e->telaAltura };
+        Vector2 origin = { 0.0f, 0.0f };
+        DrawTexturePro(imgRecorde, source, dest, origin, 0.0f, WHITE);
+
+        const char* txtTitulo = "NOVO RECORDE!";
+        const char* txtPontos = TextFormat("Pontos: %d", e->pontuacao);
+        const char* txtPrompt = "Digite seu nome (3 letras):";
+        const char* txtNome = e->entradaNome;
+
+        int xTitulo = e->telaLargura/2 - MeasureText(txtTitulo, 30)/2;
+        int xPontos = e->telaLargura/2 - MeasureText(txtPontos, 20)/2;
+        int xPrompt = e->telaLargura/2 - MeasureText(txtPrompt, 20)/2;
+        int xNome = e->telaLargura/2 - MeasureText(txtNome, 40)/2;
+
+        DrawText(txtTitulo, xTitulo, 230, 30, YELLOW);
+        DrawText(txtPontos, xPontos, 280, 20, WHITE);
+        DrawText(txtPrompt, xPrompt, 340, 20, SKYBLUE);
+        DrawText(txtNome, xNome, 380, 40, WHITE);
     }
     else if (e->telaAtual == TELA_EXIBIR_RECORDE) {
-        DrawRectangleGradientV(0, 0, e->telaLargura, e->telaAltura, (Color){10, 30, 50, 255}, (Color){20, 60, 100, 255});
+        Rectangle source = { 0.0f, 0.0f, (float)imgTopScores.width, (float)imgTopScores.height };
+        Rectangle dest = { 0.0f, 0.0f, (float)e->telaLargura, (float)e->telaAltura };
+        Vector2 origin = { 0.0f, 0.0f };
+        DrawTexturePro(imgTopScores, source, dest, origin, 0.0f, WHITE);
         
         const char* titulo = "TOP 3 RECORDES";
         int larguraTitulo = MeasureText(titulo, 30);
-        DrawText(titulo, e->telaLargura/2 - larguraTitulo/2, 100, 30, YELLOW);
+        DrawText(titulo, e->telaLargura/2 - larguraTitulo/2, 150, 30, YELLOW);
+
         for(int i=0; i<MAX_SCORES; i++) {
             const char* textoRecorde = TextFormat("%d. %s ....... %d", i+1, e->topScores[i].nome, e->topScores[i].pontuacao);
-            int larguraTextoRecorde = MeasureText(textoRecorde, 20);
-            DrawText(textoRecorde, e->telaLargura/2 - larguraTextoRecorde/2, 180 + (i*40), 20, WHITE);
+            int larguraTexto = MeasureText(textoRecorde, 20);
+            DrawText(textoRecorde, e->telaLargura/2 - larguraTexto/2, 220 + (i*50), 20, WHITE);
         }
         
         const char* prompt = "Pressione ENTER para voltar";
         int larguraPrompt = MeasureText(prompt, 20);
-        DrawText(prompt, e->telaLargura/2 - larguraPrompt/2, e->telaAltura - 100, 20, GRAY);
+        DrawText(prompt, e->telaLargura/2 - larguraPrompt/2, e->telaAltura - 80, 20, DARKBLUE);
     }
-
 }

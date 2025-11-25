@@ -4,9 +4,10 @@ SRCS = tidehit.c game.c
 OBJS = $(SRCS:.c=.o)
 
 
-CFLAGS = -Wall -Iraylib/src -I. -g
+CFLAGS = -Wall -I. -g
 
-LIBS = raylib/src/libraylib.a -lGL -lm -lpthread -ldl -lrt -lX11
+
+LIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
 all: $(TARGET)
 
@@ -18,4 +19,4 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(TARGET) $(TARGET).exe
+	rm -f $(OBJS) $(TARGET)
