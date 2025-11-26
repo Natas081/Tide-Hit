@@ -87,3 +87,7 @@ Siga estes 10 passos no terminal, executando um comando por vez:
     ```bash
     ./tidehit
     ```
+
+## Vídeo da gameplay do jogo
+
+[![Demonstração do Tide-Hit](https://img.youtube.com/vi/2tDrFtk67dQ/0.jpg)](https://www.youtube.com/watch?v=2tDrFtk67dQ)
